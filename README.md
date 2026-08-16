@@ -1,2 +1,10 @@
 # AI-Infinity-Projects
-Projects
+
+A collection of practical AI/automation projects.
+
+## Projects
+
+- [`sales-marketing-insight-assistant/`](sales-marketing-insight-assistant/) — a no-code,
+  conversational analytics assistant built in n8n. Business users ask natural-language questions
+  about sales & marketing data and get back generated SQL, live query results, insights,
+  recommendations, and charts (OpenAI/Gemini + Supabase Postgres + QuickChart).

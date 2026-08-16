@@ -1,0 +1,541 @@
+{
+  "name": "Sales & Marketing Insight Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "responseMode": "responseNodes"
+        }
+      },
+      "id": "chat-trigger",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -960,
+        0
+      ],
+      "webhookId": "sales-marketing-insight-assistant"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a PostgreSQL Expert. Convert the user's question into an optimized SQL query.\n\nThe analytics data is stored in a PostgreSQL table called `sales_marketing` with the following columns and meanings:\ncampaign_id (TEXT) – unique row ID\ncampaign_name (TEXT) – name of the campaign\ncampaign_type (TEXT) – Email, Social Media, Search Ads, Influencer, etc.\nregion (TEXT) – North, South, East, West\nchannel (TEXT) – Email, Facebook, Instagram, Google, LinkedIn, TikTok\nmonth (DATE, format YYYY-MM) – month of the record\nspend (NUMERIC) – marketing spend in that month\nleads (INTEGER) – number of leads generated\nconversions (INTEGER) – number of conversions\nsales_revenue (NUMERIC) – total revenue generated\ncac (NUMERIC) – customer acquisition cost\nroas (NUMERIC) – return on ad spend (sales_revenue / spend)\n\nUser Question:\n{{ $json.chatInput }}\n\nReturn only a valid SQL query in below json format, no explanation, and no additional text.\nRespond in the following format:\n{\n  \"sql\": \"SELECT * FROM sales_marketing LIMIT 5;\"\n}",
+        "options": {},
+        "hasOutputParser": true
+      },
+      "id": "generate-sql",
+      "name": "Generate SQL",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        -720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "openai-chat-model",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        -760,
+        200
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n  \"sql\": \"SELECT * FROM sales_marketing LIMIT 5;\"\n}"
+      },
+      "id": "structured-output-parser",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -620,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a helpful assistant. You have access to PostgreSQL Tool to execute SQL queries and get the response.\n\nFor the below User request, first retrieve the data from Database, then analyze it and generate:\n- Key insights\n- Summary of trends\n- Anomalies or unexpected patterns\n- Recommended actions\n- One-sentence executive summary\n\nUser request:\n{{ $('When chat message received').item.json.chatInput }}\n\nSQL query:\n{{ $('Generate SQL').item.json.output.sql }}",
+        "options": {}
+      },
+      "id": "sql-agent",
+      "name": "SQL Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "openai-chat-model1",
+      "name": "OpenAI Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        200
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionKey": "={{ $('When chat message received').item.json.sessionId }}",
+        "contextWindowLength": 5
+      },
+      "id": "simple-memory",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -400,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $('Generate SQL').item.json.output.sql }}",
+        "options": {},
+        "descriptionType": "auto"
+      },
+      "id": "execute-sql-query-in-postgres",
+      "name": "Execute a SQL query in Postgres",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [
+        -320,
+        200
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_WITH_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an intelligent analytics assistant.\nYour task is to decide whether a user's request requires:\n- A visual chart (bar, line, pie, etc.), or\n- A text-only explanation\n\nDecision guidelines:\n\nChoose YES if the request:\n- Asks to show, compare, break down, trend, rank, or distribute data\n- Mentions dimensions like by region, by time, by category\n- Implies quantitative comparison or visualization\n- Can be better understood visually than textually\n\nChoose NO if the request:\n- Asks why, how, explain, reason, interpret\n- Seeks insights, causes, or analysis rather than raw comparison\n- Does not explicitly or implicitly require numeric comparison\n- Is exploratory or explanatory in nature\n\nImportant rules:\n- Do NOT generate the chart or explanation\n- Do NOT assume data availability\n- Only classify the intent\n- Be conservative: if visualization adds clarity, choose YES\n\nOutput format: Return exactly one of the following responses - YES or NO\n\nUser request:\n{{ $('When chat message received').item.json.chatInput }}\n\nSQL query:\n{{ $('Generate SQL').item.json.output.sql }}",
+        "options": {}
+      },
+      "id": "chart-reqd",
+      "name": "Chart Reqd?",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        -160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "openai-chat-model2",
+      "name": "OpenAI Chat Model2",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        200
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "chart-yes-condition",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "YES",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-chart-required",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        80,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a Chart Generation Expert. Your job is to analyze the SQL query results and produce the exact structured chart configuration needed for the QuickChart node.\n\nINPUTS PROVIDED TO YOU:\n1. User query → {{ $('When chat message received').item.json.chatInput }}\n2. insight_summary → a natural-language summary generated by the AI Agent.\nInsights:\n{{ $('SQL Agent').item.json.output }}\n\nYOUR TASK:\nBased on the structure and meaning of the SQL results, generate the following outputs:\n\n1. chart_title → A clear, concise title summarizing what the chart represents.\n2. chart_type → One of the following: \"bar\", \"line\", \"pie\", \"doughnut\".\n   - Use \"bar\" for comparisons.\n   - Use \"line\" for trends over time.\n   - Use \"pie/doughnut\" for contribution/percentage split.\n3. labels_array → Extract the correct label field from sql_results.\n   - Example: campaign_name, month, region, channel.\n4. data_array → Extract the matching numeric values to plot.\n   - Example: sales_revenue, leads, conversions, spend, ROAS.\n5. explanation → A brief 2–3 line explanation of why this chart type is optimal.\n\nRULES:\n- Always pick the label column that best represents categories or timeline.\n- Always pick the numeric column that best represents measurable performance.\n- If multiple numeric columns are available, choose the one most relevant to business insights\n  (e.g., sales_revenue > conversions > leads > spend).\n- Never invent values. Use only what exists in sql_results.\n- Output your response in clean JSON ONLY in this schema:\n\n{\n  \"chart_title\": \"\",\n  \"chart_type\": \"\",\n  \"labels_array\": [],\n  \"data_array\": [],\n  \"explanation\": \"\"\n}\n\nEXAMPLE THINKING PROCESS (do NOT include in final JSON):\n- If sql_results includes a month field → use a line chart.\n- If it compares multiple campaigns → use a bar chart.\n- If showing percentage share → use pie or doughnut.\n\nNow generate the final JSON output.",
+        "options": {}
+      },
+      "id": "chart-config",
+      "name": "Chart Config",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        320,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "openai-chat-model3",
+      "name": "OpenAI Chat Model3",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        280,
+        60
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a QuickChart URL Generator.\n\nYou will be given a **Structured Chart Configuration** in JSON-like format.\nYour task is to convert that configuration into a valid QuickChart endpoint URL of the form:\nhttps://quickchart.io/chart?c={...}\n\nRULES:\n1. Use the structure exactly as provided in the input configuration.\n2. The final chart object must follow QuickChart URL syntax:\n{\n  type: '<chart_type>',\n  data: {\n    labels: [...],\n    datasets: [...]\n  },\n  options: {...} // include only if provided\n}\n3. Do NOT add new fields that are not present.\n4. Do NOT remove fields.\n5. Preserve all labels, datasets, values, chart types, colors, and options exactly.\n6. The output must be a **single valid URL**, not code blocks.\n7. Do NOT URL-encode the characters. Output in readable form like in the examples.\n\nINPUT FORMAT:\n<Structured chart configuration will come here>\n\nOUTPUT FORMAT:\nA single QuickChart URL, e.g.:\nhttps://quickchart.io/chart?c={type:'bar',data:{labels:['North','South'],datasets:[{label:'Revenue',data:[100,200]}]}}\n\nREFERENCE EXAMPLES:\n\n1. Bar Chart:\nhttps://quickchart.io/chart?c={type:'bar',data:{labels:['January','February','March','April','May'],datasets:[{label:'Dogs',data:[50,60,70,180,190]},{label:'Cats',data:[100,200,300,400,500]}]}}\n\n2. Line Chart:\nhttps://quickchart.io/chart?c={type:'line',data:{labels:['January','February','March','April','May'],datasets:[{label:'Dogs',data:[50,60,70,180,190],fill:false,borderColor:'blue'},{label:'Cats',data:[100,200,300,400,500],fill:false,borderColor:'green'}]}}\n\n3. Pie Chart:\nhttps://quickchart.io/chart?c={type:'pie',data:{labels:['January','February','March','April','May'],datasets:[{data:[50,60,70,180,190]}]}}\n\n4. Scatter Chart:\nhttps://quickchart.io/chart?c={type:'scatter',data:{datasets:[{label:'Data1',data:[{x:2,y:4},{x:3,y:3},{x:-10,y:0},{x:0,y:10},{x:10,y:5}]}]}}\n\n5. Doughnut Chart:\nhttps://quickchart.io/chart?c={type:'doughnut',data:{labels:['January','February','March','April','May'],datasets:[{data:[50,60,70,180,190]}]},options:{plugins:{doughnutlabel:{labels:[{text:'550',font:{size:20}},{text:'total'}]}}}}\n\nNow generate the correct QuickChart URL.\n\nINPUT Structured chart configuration:\n{{ $('Chart Config').item.json.output }}",
+        "options": {}
+      },
+      "id": "chart-url",
+      "name": "Chart URL",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        560,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "openai-chat-model4",
+      "name": "OpenAI Chat Model4",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        520,
+        60
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Loop over input items and add a new field called 'updatedChartUrl' to the JSON of each one\n\nfunction updateChartUrl(url) {\n  let updatedUrl = \"\";\n  for (const ch of url) {\n    if (ch === \"'\") {\n      updatedUrl += \"%27\";\n    } else if (ch === \" \") {\n      updatedUrl += \"%20\";\n    } else {\n      updatedUrl += ch;\n    }\n  }\n  return \"![chart](\" + updatedUrl + \")\";\n}\n\nfor (const item of $input.all()) {\n  const updatedURL = updateChartUrl(item.json.text)\n  item.json.updatedChartUrl = updatedURL;\n}\n\nreturn $input.all();"
+      },
+      "id": "code-in-javascript1",
+      "name": "Code in JavaScript1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "message": "=Chart Generated:\n{{ $json.updatedChartUrl }}\n\nAgent Response:\n{{ $('SQL Agent').item.json.output }}",
+        "waitForReply": false
+      },
+      "id": "respond-to-chat",
+      "name": "Respond to Chat",
+      "type": "n8n-nodes-base.respondToChat",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "message": "=Agent Response:\n{{ $('SQL Agent').item.json.output }}",
+        "waitForReply": false
+      },
+      "id": "respond-to-chat1",
+      "name": "Respond to Chat1",
+      "type": "n8n-nodes-base.respondToChat",
+      "typeVersion": 1,
+      "position": [
+        320,
+        160
+      ]
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Generate SQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate SQL",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generate SQL",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate SQL": {
+      "main": [
+        [
+          {
+            "node": "SQL Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "SQL Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "SQL Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query in Postgres": {
+      "ai_tool": [
+        [
+          {
+            "node": "SQL Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Agent": {
+      "main": [
+        [
+          {
+            "node": "Chart Reqd?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Chart Reqd?",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chart Reqd?": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Chart Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Chat1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Chart Config",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chart Config": {
+      "main": [
+        [
+          {
+            "node": "Chart URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Chart URL",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chart URL": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "pinData": {}
+}
