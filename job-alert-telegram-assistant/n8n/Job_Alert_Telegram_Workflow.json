@@ -1,0 +1,306 @@
+{
+  "name": "Job Alert - Telegram Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Defines every search feed this workflow polls, each tagged with a rough priority\n// tier matching the candidate's location preference: 1 = Delhi NCR, 2 = rest of\n// India, 3 = UAE, 4 = Australia. Tier 0 = \"let the LLM figure out the location\"\n// (used for the broad Google Alerts feeds, which aren't location-scoped).\n//\n// GOOGLE_ALERTS_* values must be replaced with the real RSS feed URLs you get after\n// creating the two Google Alerts described in docs/search_queries.md (the Alerts\n// \"RSS feed\" link \u2014 not the email digest link).\n\nconst GOOGLE_ALERTS_LIFE_INSURANCE_VP = 'REPLACE_WITH_GOOGLE_ALERTS_RSS_URL_1';\nconst GOOGLE_ALERTS_TRAVEL_BUSINESS_HEAD = 'REPLACE_WITH_GOOGLE_ALERTS_RSS_URL_2';\n\nconst feeds = [\n  { label: 'Google Alerts \u2014 Life Insurance VP (Account Mgmt / Transformation)', feedUrl: GOOGLE_ALERTS_LIFE_INSURANCE_VP, priorityTier: 0 },\n  { label: 'Google Alerts \u2014 Travel & Hospitality Business Head', feedUrl: GOOGLE_ALERTS_TRAVEL_BUSINESS_HEAD, priorityTier: 0 },\n\n  // Optional Indeed regional RSS feeds \u2014 Indeed has changed RSS availability by\n  // region over the years, so verify these after import; if one 404s or returns\n  // empty, just delete that line (see docs/troubleshooting.md).\n  { label: 'Indeed India \u2014 VP Account Management, Life Insurance (Delhi NCR)', feedUrl: 'https://www.indeed.co.in/rss?q=%22VP+Account+Management%22+%22Life+Insurance%22&l=Delhi+NCR', priorityTier: 1 },\n  { label: 'Indeed India \u2014 VP Transformation, Life Insurance (Delhi NCR)', feedUrl: 'https://www.indeed.co.in/rss?q=%22VP+Transformation%22+%22Life+Insurance%22&l=Delhi+NCR', priorityTier: 1 },\n  { label: 'Indeed India \u2014 Business Head, Travel (Delhi NCR)', feedUrl: 'https://www.indeed.co.in/rss?q=%22Business+Head%22+Travel&l=Delhi+NCR', priorityTier: 1 },\n  { label: 'Indeed India \u2014 VP, Life Insurance / Transformation (pan-India)', feedUrl: 'https://www.indeed.co.in/rss?q=%22VP%22+%22Life+Insurance%22+Transformation', priorityTier: 2 },\n  { label: 'Indeed India \u2014 Business Head, Travel/Hospitality (pan-India)', feedUrl: 'https://www.indeed.co.in/rss?q=%22Business+Head%22+%22Travel%22', priorityTier: 2 },\n  { label: 'Indeed UAE \u2014 VP, Life Insurance', feedUrl: 'https://www.indeed.ae/rss?q=%22VP%22+%22Life+Insurance%22', priorityTier: 3 },\n  { label: 'Indeed UAE \u2014 Business Head, Travel/Hospitality', feedUrl: 'https://www.indeed.ae/rss?q=%22Business+Head%22+Travel', priorityTier: 3 },\n  { label: 'Indeed Australia \u2014 VP, Life Insurance', feedUrl: 'https://au.indeed.com/rss?q=%22VP%22+%22Life+Insurance%22', priorityTier: 4 },\n  { label: 'Indeed Australia \u2014 Business Head, Travel/Hospitality', feedUrl: 'https://au.indeed.com/rss?q=%22Business+Head%22+Travel', priorityTier: 4 },\n];\n\nreturn feeds\n  .filter(f => f.feedUrl && !f.feedUrl.startsWith('REPLACE_WITH'))\n  .map(f => ({ json: f }));\n"
+      },
+      "id": "build-feed-list",
+      "name": "Build Feed List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Fetches every feed produced by \"Build Feed List\" and parses RSS 2.0 / Atom\n// entries into a flat, normalized list.\n//\n// This runs as ONE Code node (rather than one RSS Feed Read node per feed, with\n// downstream nodes reading back $('Build Feed List').item) because that node\n// expands a single input item into many output items, and n8n can't reliably\n// resolve a paired-item expression across that 1-to-many boundary. Fetching\n// and parsing here keeps every entry attached to the feed it came from.\n\nfunction decodeEntities(str) {\n  return (str || '')\n    .replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/g, '$1')\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction extractTag(block, tag) {\n  const m = block.match(new RegExp(`<${tag}[^>]*>([\\\\s\\\\S]*?)<\\\\/${tag}>`, 'i'));\n  return m ? decodeEntities(m[1]) : '';\n}\n\nfunction extractLink(block) {\n  // RSS: <link>url</link>. Atom: <link href=\"url\"/>.\n  const rss = block.match(/<link[^>]*>([\\s\\S]*?)<\\/link>/i);\n  if (rss && rss[1].trim()) return decodeEntities(rss[1]);\n  const atom = block.match(/<link[^>]*href=[\"']([^\"']+)[\"']/i);\n  return atom ? atom[1] : '';\n}\n\nfunction parseFeed(xml) {\n  const isAtom = /<feed[\\s>]/i.test(xml) && !/<rss[\\s>]/i.test(xml);\n  const tag = isAtom ? 'entry' : 'item';\n  const blocks = xml.match(new RegExp(`<${tag}[\\\\s\\\\S]*?<\\\\/${tag}>`, 'gi')) || [];\n  return blocks.map(block => ({\n    title: extractTag(block, 'title'),\n    link: extractLink(block),\n    pubDate: extractTag(block, isAtom ? 'published' : 'pubDate') || extractTag(block, 'updated'),\n    snippet: (extractTag(block, isAtom ? 'summary' : 'description') || extractTag(block, 'content')).slice(0, 500),\n  }));\n}\n\nconst feeds = $input.all();\nconst results = [];\n\nfor (const feed of feeds) {\n  const { label, feedUrl, priorityTier } = feed.json;\n  try {\n    const xml = await this.helpers.httpRequest({\n      url: feedUrl,\n      method: 'GET',\n      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; job-alert-bot/1.0)' },\n      timeout: 15000,\n    });\n    const entries = parseFeed(typeof xml === 'string' ? xml : String(xml));\n    for (const entry of entries) {\n      if (!entry.title || !entry.link) continue;\n      results.push({ json: { ...entry, sourceLabel: label, priorityTier } });\n    }\n  } catch (err) {\n    // One broken feed (e.g. Indeed RSS disabled in a region) must not fail the run.\n    results.push({ json: { fetchError: true, feed: label, error: err.message } });\n  }\n}\n\nreturn results;\n"
+      },
+      "id": "fetch-and-parse-feeds",
+      "name": "Fetch & Parse Feeds",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -920,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Drops feed-fetch error markers, keeps only postings published within the last\n// LOOKBACK_HOURS, and skips anything already alerted in a previous run (tracked\n// in this workflow's static data, keyed by link).\n//\n// Static data lives with the workflow on this n8n instance and survives between\n// scheduled runs, but resets if you delete and re-import the workflow fresh.\n\nconst LOOKBACK_HOURS = 72;\nconst MAX_SEEN_LINKS = 1000;\n\nconst staticData = $getWorkflowStaticData('global');\nif (!Array.isArray(staticData.seenLinks)) staticData.seenLinks = [];\nconst seen = new Set(staticData.seenLinks);\n\nconst cutoff = Date.now() - LOOKBACK_HOURS * 60 * 60 * 1000;\nconst fresh = [];\n\nfor (const item of $input.all()) {\n  const j = item.json;\n  if (j.fetchError) continue;\n  if (!j.link || seen.has(j.link)) continue;\n\n  const published = j.pubDate ? Date.parse(j.pubDate) : NaN;\n  if (!Number.isNaN(published) && published < cutoff) continue;\n\n  fresh.push(item);\n  seen.add(j.link);\n}\n\nstaticData.seenLinks = Array.from(seen).slice(-MAX_SEEN_LINKS);\n\nreturn fresh;\n"
+      },
+      "id": "dedupe-and-filter-recent",
+      "name": "Dedupe & Filter Recent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are screening job postings for one specific candidate. Decide whether each\nposting is worth alerting them about, and tag its location priority.\n\nCANDIDATE PROFILE\n- Bishal Das \u2014 22+ years of cross-industry leadership across Life Insurance,\n  Business/Corporate Travel, NBFC, and Airlines.\n- Currently: AVP, Enterprise COE (Digital Transformation), Axis Max Life Insurance,\n  Gurgaon \u2014 owns GTM strategy for digital solutions across distribution channels,\n  runs enterprise digital-maturity diagnostics, drives C-suite transformation\n  business cases, governs transformation frameworks and adoption/ROI dashboards.\n- Prior: AVP\u2013Events, Axis Max Life Insurance (\u20b9100Cr+ annual spend, 30+ countries);\n  Business Head\u2013Cognizant & Asia Relationship Manager, dnata/Emirates Group (\u20b9450Cr\n  P&L, multi-country shared services across India, Middle East, and 12 APAC\n  markets); Asia Client Relationship Manager, American Express Global Business\n  Travel ($35M+ strategic account portfolio including Ford Motor Company, Cisco,\n  Adobe, Intel, Cognizant); Sales Head, Weizmann Forex (scaled divisional revenue\n  4x in 18 months); earlier corporate sales roles at Go Airlines and Jet Airways.\n- Education: IIM Bangalore EGMP, MBA (Sikkim Manipal University), B.Com (Hons),\n  Calcutta University.\n- Based in Gurgaon (Delhi NCR), India. Open to relocation.\n\nTARGET ROLES \u2014 must clearly match ONE of these to be relevant\n1. VP / AVP / Vice President \u2014 Account Management, in Life Insurance / Insurance /\n   BFSI.\n2. VP / AVP / Vice President \u2014 Transformation / Business Transformation / Digital\n   Transformation / Change Management, in Life Insurance / Insurance / BFSI.\n3. Business Head / Head of Business / GM\u2013Business Head, in Travel, Corporate\n   Travel, Hospitality, or Aviation.\n\nReject: individual-contributor roles; titles clearly below VP/Head-of-department\nscope (e.g. plain Manager, Senior Manager, Assistant Manager without VP/Head\nscope); industries unrelated to Life Insurance/BFSI or Travel/Hospitality/Aviation\n(unless the posting is unambiguously one of the three role types above regardless\nof surrounding keyword noise).\n\nLOCATION PRIORITY \u2014 assign the best-fit tier; infer from company HQ or context if\nthe posting doesn't state a location explicitly, otherwise default to 5\n1 = Delhi NCR (Delhi, Gurgaon/Gurugram, Noida, Faridabad)\n2 = Rest of India\n3 = UAE (Dubai, Abu Dhabi, Sharjah, etc.)\n4 = Australia\n5 = Any other country whose job market commonly accepts Indian nationals on a\n    work-visa/PR pathway at this seniority (e.g. Singapore, Qatar, Saudi Arabia,\n    UK, Canada) \u2014 set accepts_indian_profile true only with reasonable\n    confidence; set it false if the role is unlikely to sponsor or consider an\n    international candidate at this level.\n\nINPUT POSTING\nTitle: {{ $json.title }}\nSource: {{ $json.sourceLabel }}\nSnippet: {{ $json.snippet }}\nLink: {{ $json.link }}\n\nReturn ONLY this JSON, no other text and no markdown code fences:\n{\n  \"relevant\": true,\n  \"role_match\": \"VP Account Management | VP Transformation | Business Head Travel-Hospitality | none\",\n  \"industry_match\": \"Life Insurance | Travel/Hospitality | other\",\n  \"location_tier\": 1,\n  \"location_text\": \"short human-readable location, e.g. 'Gurgaon, India'\",\n  \"accepts_indian_profile\": true,\n  \"reason\": \"one sentence on why this is, or isn't, a fit\"\n}\n",
+        "options": {},
+        "hasOutputParser": true
+      },
+      "id": "relevance-classifier",
+      "name": "Relevance Classifier",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        -420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "openai-chat-model",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        200
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n  \"relevant\": true,\n  \"role_match\": \"VP Account Management\",\n  \"industry_match\": \"Life Insurance\",\n  \"location_tier\": 1,\n  \"location_text\": \"Gurgaon, India\",\n  \"accepts_indian_profile\": true,\n  \"reason\": \"Direct VP Account Management title in Life Insurance, based in Gurgaon.\"\n}"
+      },
+      "id": "classifier-output-parser",
+      "name": "Classifier Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -320,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "relevant-true-condition",
+              "leftValue": "={{ $json.output.relevant }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "relevant-only",
+      "name": "Relevant Only",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Builds one or more Telegram-ready Markdown digest messages from the relevant,\n// classified postings that survived the \"Relevant Only\" filter. Splits into\n// multiple messages if the digest would exceed Telegram's ~4096-character limit.\n\nconst TIER_LABELS = {\n  1: '\ud83d\udfe2 Delhi NCR',\n  2: '\ud83d\udfe1 India (other)',\n  3: '\ud83d\udd35 UAE',\n  4: '\ud83d\udfe3 Australia',\n  5: '\u26aa Other (open to Indian profiles)',\n};\nconst MAX_MESSAGE_LENGTH = 3800;\n\nfunction tierOf(item) {\n  const t = item.json.output && item.json.output.location_tier;\n  return Number.isInteger(t) ? t : (item.json.priorityTier || 5) || 5;\n}\n\nfunction formatEntry(item) {\n  const j = item.json;\n  const out = j.output || {};\n  const title = j.title || 'Untitled role';\n  const loc = out.location_text || 'Location unclear \u2014 check listing';\n  const reason = out.reason ? `\\n_${out.reason}_` : '';\n  return `*${title}*\\n\ud83d\udccd ${loc} | via ${j.sourceLabel || 'search'}${reason}\\n\ud83d\udd17 ${j.link}`;\n}\n\nconst items = $input.all().slice().sort((a, b) => tierOf(a) - tierOf(b));\n\nconst chunks = [];\nlet current = '\ud83d\udd14 *New role matches found*\\n';\nlet currentTier = null;\n\nfor (const item of items) {\n  const tier = tierOf(item);\n  let addition = '';\n  if (tier !== currentTier) {\n    addition += `\\n\\n*${TIER_LABELS[tier] || 'Other'}*\\n`;\n    currentTier = tier;\n  }\n  addition += `\\n${formatEntry(item)}\\n`;\n\n  if ((current + addition).length > MAX_MESSAGE_LENGTH) {\n    chunks.push(current);\n    current = addition;\n  } else {\n    current += addition;\n  }\n}\nif (current.trim()) chunks.push(current);\n\nreturn chunks.map(message => ({ json: { message } }));\n"
+      },
+      "id": "build-telegram-digest",
+      "name": "Build Telegram Digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "REPLACE_WITH_YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "disable_web_page_preview": false
+        }
+      },
+      "id": "send-telegram-alert",
+      "name": "Send Telegram Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        0
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 6 Hours": {
+      "main": [
+        [
+          {
+            "node": "Build Feed List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Feed List": {
+      "main": [
+        [
+          {
+            "node": "Fetch & Parse Feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch & Parse Feeds": {
+      "main": [
+        [
+          {
+            "node": "Dedupe & Filter Recent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dedupe & Filter Recent": {
+      "main": [
+        [
+          {
+            "node": "Relevance Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Relevance Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classifier Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Relevance Classifier",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relevance Classifier": {
+      "main": [
+        [
+          {
+            "node": "Relevant Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relevant Only": {
+      "main": [
+        [
+          {
+            "node": "Build Telegram Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Telegram Digest": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "pinData": {}
+}
