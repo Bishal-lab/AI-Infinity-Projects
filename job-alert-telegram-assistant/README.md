@@ -1,9 +1,9 @@
 # Job Alert → Telegram Assistant
 
-A no-code [n8n](https://n8n.io) workflow that runs on a schedule, searches for
-open roles matching a target profile, uses an LLM to decide which postings are
-actually relevant (role, industry, and location fit), and pushes a formatted
-digest straight into a Telegram chat — no manual job-board checking.
+A no-code [Make](https://www.make.com) automation that watches for open roles
+matching a target profile, uses an LLM to decide which postings are actually
+relevant (role, industry, and location fit), and pushes a formatted digest
+straight into a Telegram chat — no manual job-board checking.
 
 Built for this profile:
 - **Roles**: VP / AVP Account Management *or* VP / AVP Transformation, in Life
@@ -12,8 +12,8 @@ Built for this profile:
   country that commonly accepts Indian nationals at this seniority.
 
 Everything role- and location-specific lives in two places, so you can retarget
-this for a different profile without touching the workflow's structure:
-[`n8n/prompts/04_relevance_classifier.md`](n8n/prompts/04_relevance_classifier.md)
+this for a different profile without touching the scenario structure:
+[`make/relevance_classifier_prompt.md`](make/relevance_classifier_prompt.md)
 (the LLM's screening criteria) and
 [`docs/search_queries.md`](docs/search_queries.md) (the search queries feeding it).
 
@@ -21,51 +21,66 @@ this for a different profile without touching the workflow's structure:
 
 | Layer | Tool |
 |---|---|
-| Orchestration / schedule | [n8n](https://n8n.io) (cloud or self-hosted) |
+| Orchestration / schedule | [Make](https://www.make.com) (formerly Integromat) |
 | Job discovery | [Google Alerts](https://www.google.com/alerts) RSS (primary — covers LinkedIn, Naukri, iimjobs, etc.) + Indeed regional RSS (optional secondary) |
-| Relevance screening | OpenAI (`gpt-4o-mini` or similar) — swappable for Google Gemini free tier, same as this repo's other project |
+| Relevance screening | OpenAI (`gpt-4o-mini` or similar) |
+| Dedup / fan-in storage | Make's built-in Data Store |
 | Delivery | [Telegram Bot API](https://core.telegram.org/bots) |
 
 ## Architecture
 
+This is built as **two kinds of Make scenario**, not one giant scenario:
+
 ```mermaid
 flowchart TD
-    A["Every 6 Hours\n(Schedule Trigger)"] --> B["Build Feed List\n(Code)\nGoogle Alerts + Indeed\nRSS URLs, tagged by\nlocation priority"]
-    B --> C["Fetch & Parse Feeds\n(Code)\nfetches every feed,\nparses RSS/Atom by hand"]
-    C --> D["Dedupe & Filter Recent\n(Code)\ndrops already-alerted links\n(workflow static data) and\nanything older than 72h"]
-    D --> E["Relevance Classifier\n(Basic LLM Chain +\nStructured Output Parser)\nrole match / industry match /\nlocation tier / accepts-Indian-profile"]
-    E --> F["Relevant Only\n(Filter)\nkeeps output.relevant == true"]
-    F --> G["Build Telegram Digest\n(Code)\ngroups by location tier,\nMarkdown, chunked to 4096 chars"]
-    G --> H["Send Telegram Alert\n(Telegram node)"]
+    subgraph W["Watcher scenario (one per search feed — clone per feed)"]
+        A["Watch RSS feed items\n(RSS trigger)\nper-feed polling +\nbuilt-in new-item dedup"] --> B["Create a Chat Completion\n(OpenAI)\nrole / industry / location-tier\nclassification, JSON out"]
+        B --> C["Parse JSON"]
+        C --> D{"relevant == true?\n(Filter)"}
+        D -- No --> X["stop"]
+        D -- Yes --> E["Add/Replace a Record\n(Data Store: Job Alerts)\nkeyed by link — dedupes\nacross feeds too"]
+    end
+    subgraph S["Digest sender scenario (one, scheduled)"]
+        F["Search Records\n(Data Store: Job Alerts)\nfilter: notified = false"] --> G["Array Aggregator\nsort by locationTier,\nbuild Markdown text"]
+        G --> H{"any new jobs?\n(Filter)"}
+        H -- No --> Y["stop"]
+        H -- Yes --> I["Send a Text Message\n(Telegram Bot)"]
+        I --> J["Iterator + Update a Record\nmark each as notified"]
+    end
+    E -.->|shared Data Store| F
 ```
 
-Why this shape:
-- **Fetching feeds inside a Code node**, not one RSS Feed Read node per feed —
-  n8n can't reliably resolve `$('Build Feed List').item` across a node that
-  expands one input item into many outputs (a 1-to-many paired-item boundary),
-  so `Fetch & Parse Feeds` fetches and tags every entry itself, keeping the
-  originating feed's label attached to each result. See
-  [`n8n/prompts/02_fetch_and_parse_feeds.js`](n8n/prompts/02_fetch_and_parse_feeds.js).
-- **Dedupe happens before the LLM call**, not after, to avoid re-spending LLM
-  tokens re-classifying postings you were already alerted about.
-- **Google Alerts is the primary source, not a scraper** — it's officially
-  supported, has no rate limits or ToS risk, and indexes far more job boards
-  than any single site's own RSS. Indeed's regional RSS is wired in as a bonus
-  but treated as optional since its availability has shifted by region over
-  time (see [`docs/troubleshooting.md`](docs/troubleshooting.md)).
-- **The LLM does the fine-grained filtering**, not the search queries — the
+Why this shape, not one scenario looping over every feed:
+- **`Watch RSS feed items` already handles fetching, parsing, and per-feed
+  new-item dedup natively** — reusing it means this project doesn't need a
+  hand-rolled XML parser or dedupe cache, either of which would otherwise
+  need a scripting module Make doesn't guarantee on every plan.
+- **Fanning results into a shared Data Store, then sending from one place**,
+  gives one combined, location-sorted Telegram digest instead of a separate
+  ping per feed per poll.
+- **Adding a new search later is "clone a watcher scenario, change the feed
+  URL"** — nothing shared needs to change, and a dead/broken feed can only
+  ever break its own scenario, never the others.
+- **The LLM does the fine-grained filtering, not the search queries** — the
   Google Alerts queries are intentionally broad; precision comes from
-  [`04_relevance_classifier.md`](n8n/prompts/04_relevance_classifier.md), which
-  is where role/industry/location rules actually live.
+  [`relevance_classifier_prompt.md`](make/relevance_classifier_prompt.md),
+  which is where role/industry/location rules actually live.
+
+There's no importable blueprint `.json` here — see
+[`make/build_guide.md`](make/build_guide.md) for why, and for the full
+module-by-module build path, which is the authoritative source for this
+project.
 
 ## Repo layout
 
 ```
 job-alert-telegram-assistant/
 ├── README.md                                  ← you are here
-├── n8n/
-│   ├── Job_Alert_Telegram_Workflow.json        ← importable n8n workflow
-│   └── prompts/                                ← every node's code/prompt, verbatim, for copy-paste or reference
+├── make/
+│   ├── build_guide.md                          ← module-by-module setup for both scenario types
+│   ├── relevance_classifier_prompt.md          ← LLM system/user prompt, verbatim
+│   ├── classification_json_schema.json         ← Parse JSON module's data structure (paste into Make's "Generate")
+│   └── feed_urls.md                            ← every watcher scenario to build/clone, with its feed URL
 └── docs/
     ├── search_queries.md                       ← Google Alerts setup + exact query strings, Indeed RSS reference
     ├── sample_alert_message.md                 ← what the Telegram message looks like
@@ -94,58 +109,28 @@ Google Alerts (one for Life Insurance VP roles, one for Travel/Hospitality
 Business Head roles) with **Deliver to: RSS feed**, and copy each alert's RSS
 feed URL.
 
-### Step 3 — n8n workflow
+### Step 3 — Build the Make scenarios
 
-1. Start n8n ([n8n cloud](https://n8n.io) or self-hosted) and create a new
-   workflow.
-2. **Import** [`n8n/Job_Alert_Telegram_Workflow.json`](n8n/Job_Alert_Telegram_Workflow.json)
-   (Workflows → Import from File).
-   > **This JSON was hand-authored and not verified against a live n8n
-   > instance** (no n8n available in the environment that built this
-   > project) — same caveat as this repo's other n8n project. After import you
-   > may see a node or two flagged as needing its type re-selected or
-   > credentials re-attached; that's expected. If a node fails to import
-   > cleanly, rebuild it by hand using its file in `n8n/prompts/` as the source
-   > of truth — every prompt and code block there is copy-paste ready.
-3. Open the **`Build Feed List`** code node and replace
-   `REPLACE_WITH_GOOGLE_ALERTS_RSS_URL_1` / `_2` with the two feed URLs from
-   Step 2.
-4. Set up credentials:
-   - **OpenAI**: Credentials → New → OpenAI API → assign to `OpenAI Chat
-     Model`.
-   - **Telegram**: Credentials → New → Telegram API → paste your bot token
-     from Step 1 → assign to `Send Telegram Alert`.
-5. Open **`Send Telegram Alert`** → replace `REPLACE_WITH_YOUR_TELEGRAM_CHAT_ID`
-   in the `chatId` field with your chat ID from Step 1.
-6. (Optional) Open **`Every 6 Hours`** and adjust the interval — e.g. twice a
-   day is plenty given Google Alerts itself batches roughly daily; see
-   [`docs/troubleshooting.md`](docs/troubleshooting.md).
-7. **Activate** the workflow (toggle top-right). It fires on its own from
-   here — no manual "test chat" step needed, though you can still right-click
-   → *Execute Workflow* to trigger one run immediately and confirm the
-   Telegram message arrives.
+Follow [`make/build_guide.md`](make/build_guide.md) end to end:
+1. Create the shared `Job Alerts` Data Store, Telegram Bot connection, and
+   OpenAI connection.
+2. Build one **watcher scenario** fully (RSS trigger → OpenAI classifier →
+   Parse JSON → Filter → Data Store write), then clone it per
+   [`make/feed_urls.md`](make/feed_urls.md) for the rest of the feeds.
+3. Build the **digest sender scenario** (Data Store search → aggregate/sort →
+   Filter → Telegram send → mark notified).
+4. Activate everything and run the end-to-end test at the bottom of the
+   build guide.
 
 ### Step 4 — Retargeting for a different profile
 
 Everything specific to this candidate's roles/industries/locations lives in
-two files — edit these, not the workflow structure, if priorities change:
-- [`n8n/prompts/04_relevance_classifier.md`](n8n/prompts/04_relevance_classifier.md)
+two files — edit these, not the scenario structure, if priorities change:
+- [`make/relevance_classifier_prompt.md`](make/relevance_classifier_prompt.md)
   — candidate profile, target role definitions, location tiers.
-- [`docs/search_queries.md`](docs/search_queries.md) — the Google Alerts query
-  strings and Indeed RSS query parameters.
-
-## The pipeline, node by node
-
-| Node | Type | Code/prompt file |
-|---|---|---|
-| `Every 6 Hours` | Schedule Trigger | — |
-| `Build Feed List` | Code | [`n8n/prompts/01_build_feed_list.js`](n8n/prompts/01_build_feed_list.js) |
-| `Fetch & Parse Feeds` | Code | [`n8n/prompts/02_fetch_and_parse_feeds.js`](n8n/prompts/02_fetch_and_parse_feeds.js) |
-| `Dedupe & Filter Recent` | Code | [`n8n/prompts/03_dedupe_and_filter_recent.js`](n8n/prompts/03_dedupe_and_filter_recent.js) |
-| `Relevance Classifier` | Basic LLM Chain + Structured Output Parser | [`n8n/prompts/04_relevance_classifier.md`](n8n/prompts/04_relevance_classifier.md) |
-| `Relevant Only` | Filter | keeps items where `output.relevant == true` |
-| `Build Telegram Digest` | Code | [`n8n/prompts/05_build_telegram_digest.js`](n8n/prompts/05_build_telegram_digest.js) |
-| `Send Telegram Alert` | Telegram node | sends the final message(s) |
+- [`docs/search_queries.md`](docs/search_queries.md) /
+  [`make/feed_urls.md`](make/feed_urls.md) — the Google Alerts query strings
+  and Indeed RSS query parameters.
 
 ## Sample output
 
@@ -154,24 +139,27 @@ Telegram alert looks like, grouped by location priority.
 
 ## Security & cost notes
 
-- The bot token and chat ID identify a private Telegram chat — keep the n8n
-  credential private; anyone with the token can send messages as your bot.
+- The bot token and chat ID identify a private Telegram chat — keep the Make
+  connection private; anyone with the token can send messages as your bot.
 - Each new, deduped posting costs one LLM call (`gpt-4o-mini` pricing is cents
-  per hundred calls) — dedupe running *before* the classifier keeps this cost
-  bounded to genuinely new postings, not every posting on every run.
-- Dedupe is link-based and stored in the workflow's n8n-managed static data —
-  see the note in [`docs/troubleshooting.md`](docs/troubleshooting.md) about
-  what happens on re-import.
+  per hundred calls) — the `Watch RSS feed items` trigger's own new-item-only
+  emission keeps this bounded to genuinely new postings, not everything in
+  the feed on every poll.
+- Make's free/starter plans cap monthly **operations** (each module execution
+  counts as one) — with N watcher scenarios polling every 6 hours plus one
+  digest sender, budget roughly `N × 4 runs/day × ~4 ops/run` even on quiet
+  days (the RSS trigger check itself is an op), so start with the two
+  required Google Alerts watchers before adding every optional Indeed feed.
 - Google Alerts and Indeed RSS are both public, unauthenticated endpoints —
   no API keys to leak, but also no SLA; treat missed or delayed alerts as a
   possibility, not a guarantee, for anything time-sensitive.
 
 ## Deliverables checklist
 
-- [x] Scheduled n8n workflow covering discovery → dedupe → LLM relevance
-      screening → Telegram delivery (`n8n/`)
+- [x] Scheduled Make automation covering discovery → dedupe → LLM relevance
+      screening → Telegram delivery (`make/`)
 - [x] Profile-specific search queries and screening criteria, isolated from
-      workflow structure for easy retargeting (`docs/search_queries.md`,
-      `n8n/prompts/04_relevance_classifier.md`)
-- [x] Documentation: Telegram bot setup, Google Alerts setup, import steps,
-      troubleshooting guide (this file + `docs/`)
+      scenario structure for easy retargeting (`docs/search_queries.md`,
+      `make/relevance_classifier_prompt.md`)
+- [x] Documentation: Telegram bot setup, Google Alerts setup, module-by-module
+      build guide, troubleshooting guide (this file + `make/`, `docs/`)

@@ -8,7 +8,7 @@ A collection of practical AI/automation projects.
   conversational analytics assistant built in n8n. Business users ask natural-language questions
   about sales & marketing data and get back generated SQL, live query results, insights,
   recommendations, and charts (OpenAI/Gemini + Supabase Postgres + QuickChart).
-- [`job-alert-telegram-assistant/`](job-alert-telegram-assistant/) — a scheduled n8n workflow
-  that searches for target job openings (Google Alerts + Indeed RSS), uses an LLM to screen
-  each posting for role/industry/location fit against a candidate profile, and delivers a
-  formatted digest straight to a Telegram chat.
+- [`job-alert-telegram-assistant/`](job-alert-telegram-assistant/) — a scheduled Make.com
+  automation that searches for target job openings (Google Alerts + Indeed RSS), uses an LLM
+  to screen each posting for role/industry/location fit against a candidate profile, and
+  delivers a formatted digest straight to a Telegram chat.

@@ -25,6 +25,7 @@ What lands in your Telegram chat looks like this (Markdown-rendered):
 > _Transformation VP-equivalent role in Insurance, UAE market accepts international hires._
 > 🔗 https://example.com/job/54321
 
-If a run finds no new, relevant postings, the workflow sends nothing — the
-`Dedupe & Filter Recent` and `Relevant Only` steps both short-circuit on empty
-input, so you won't get "no new jobs today" noise every 6 hours.
+If a run finds no new, relevant postings, the digest sender scenario sends
+nothing — the `Search Records` (filter `notified = false`) and "Has new jobs"
+steps both short-circuit on empty input, so you won't get "no new jobs today"
+noise every 6 hours.

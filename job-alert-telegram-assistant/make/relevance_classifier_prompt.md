@@ -1,3 +1,16 @@
+# Relevance Classifier — OpenAI module prompt
+
+Used in the **"Create a Chat Completion"** module (OpenAI app) inside every
+watcher scenario. Paste the **System message** block verbatim into the
+module's system-role message field. The **User message** template goes in the
+user-role message field, with the bracketed tokens replaced by the actual
+module-reference tags Make inserts when you click the field from the RSS
+trigger's output (they'll look like `{{1.title}}` etc. — the exact number
+depends on that module's position in your scenario).
+
+## System message (verbatim, same in every watcher scenario)
+
+```
 You are screening job postings for one specific candidate. Decide whether each
 posting is worth alerting them about, and tag its location priority.
 
@@ -45,12 +58,6 @@ the posting doesn't state a location explicitly, otherwise default to 5
     confidence; set it false if the role is unlikely to sponsor or consider an
     international candidate at this level.
 
-INPUT POSTING
-Title: {{ $json.title }}
-Source: {{ $json.sourceLabel }}
-Snippet: {{ $json.snippet }}
-Link: {{ $json.link }}
-
 Return ONLY this JSON, no other text and no markdown code fences:
 {
   "relevant": true,
@@ -61,3 +68,17 @@ Return ONLY this JSON, no other text and no markdown code fences:
   "accepts_indian_profile": true,
   "reason": "one sentence on why this is, or isn't, a fit"
 }
+```
+
+## User message (template — fill from the RSS trigger module's output fields)
+
+```
+Title: [RSS trigger → title]
+Source: <hardcoded per scenario, e.g. "Google Alerts — Life Insurance VP">
+Snippet: [RSS trigger → description]
+Link: [RSS trigger → link]
+```
+
+Retargeting for a different candidate/role set: edit the **CANDIDATE PROFILE**,
+**TARGET ROLES**, and **LOCATION PRIORITY** sections above — the JSON output
+contract and the rest of the scenario don't need to change.
