@@ -167,3 +167,53 @@ ORDER BY month;
 ```
 https://quickchart.io/chart?c={type:'line',data:{labels:['2025-01','2025-02','2025-03','2025-04','2025-05','2025-06','2025-07','2025-08'],datasets:[{label:'total_revenue',data:[186603.01,164802.92,158578.76,137326.57,160482.86,166621.81,157752.99,159178.88],fill:false,borderColor:'blue'}]}}
 ```
+
+---
+
+## 5. "Show the sales number market wise"
+
+"Market" maps to the `region` column (North / South / East / West), same dimension used in
+example 1's lead breakdown — this question asks for the same cut, but on revenue instead of
+lead volume.
+
+**Generated SQL:**
+```sql
+SELECT region,
+       SUM(sales_revenue) AS total_revenue,
+       ROUND(100.0 * SUM(sales_revenue) / SUM(SUM(sales_revenue)) OVER (), 1) AS pct_of_total
+FROM sales_marketing
+GROUP BY region
+ORDER BY total_revenue DESC;
+```
+
+**Result rows:**
+
+| region (market) | total_revenue | pct_of_total |
+|---|---|---|
+| North | 383,944.13 | 29.7% |
+| East | 340,853.99 | 26.4% |
+| South | 298,331.96 | 23.1% |
+| West | 268,217.72 | 20.8% |
+
+**SQL Agent insight summary:**
+- **Key insights:** North is the top-selling market at $383.9k (29.7% of total revenue), followed
+  closely by East at $340.9k (26.4%); West trails at $268.2k (20.8%).
+- **Summary of trends:** The North-East-South-West ordering matches the lead-volume ranking from
+  "leads by region," confirming lead volume is translating proportionally into revenue rather
+  than one region converting disproportionately better or worse.
+- **Anomalies:** None — ROAS is tight across all four markets (2.58x-2.68x), so the revenue gap is
+  driven by volume, not efficiency differences.
+- **Recommended actions:** Since conversion efficiency is roughly even across markets, growing
+  West and South's revenue is a volume problem — increase spend/lead-gen activity there rather
+  than optimizing conversion rate; North's approach is worth documenting as the volume playbook
+  for the other regions.
+- **Executive summary:** "North is the top market at $383.9k in sales (29.7% of total), roughly
+  43% ahead of the lowest market, West, at $268.2k."
+
+**Chart required?** YES ("market wise" implies a by-dimension breakdown) → `pie` or `bar` chart
+(pie/doughnut chosen here since the insight is framed as a % share of total revenue).
+
+**Chart URL:**
+```
+https://quickchart.io/chart?c={type:'doughnut',data:{labels:['North','East','South','West'],datasets:[{data:[383944.13,340853.99,298331.96,268217.72]}]}}
+```

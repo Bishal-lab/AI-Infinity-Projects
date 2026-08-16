@@ -127,15 +127,18 @@ formatting steps, OpenAI for the insight-generation agent).
 
 ## Testing
 
-Run these two example questions in the Test Chat panel end-to-end:
+Run these example questions in the Test Chat panel end-to-end:
 
 - **"Show me leads by region"** — expect a `GROUP BY region` query, a chart-required = YES
   classification, a bar chart, and a summary calling out North as the strongest region.
 - **"Which campaign performed best?"** — expect an `ORDER BY` on ROAS or conversions/spend, and a
   summary naming the top campaign by return on ad spend.
+- **"Show the sales number market wise"** — "market" maps to the `region` column; expect a
+  `GROUP BY region` query on `sales_revenue` (not leads this time), a pie/doughnut or bar chart,
+  and a summary naming North as the top market at ~29.7% of total revenue.
 
 Confirm the final chat message contains: the generated SQL (via the agent's response), key
-insights, an executive summary, recommendations, and — for these two questions — a chart image
+insights, an executive summary, recommendations, and — for these questions — a chart image
 link.
 
 See [`docs/sample_insight_reports.md`](docs/sample_insight_reports.md) for worked-example
