@@ -143,6 +143,21 @@ KPI_DEFINITIONS: tuple[KpiDefinition, ...] = (
         channels=("teams_webinar",),
     ),
     KpiDefinition(
+        key="stayed_to_end",
+        label="Stayed to the end",
+        numerator="COMPLETED",
+        denominator="ENGAGED",
+        formula="completed / attended",
+        description=(
+            "Of the people who joined the session, how many stayed past the "
+            "completion threshold. This is the one rate a plain attendance "
+            "report can support — unlike attendance or show-up rate it needs no "
+            "invite list, so it stays measurable when Targeted and Registered "
+            "do not."
+        ),
+        channels=("teams_webinar",),
+    ),
+    KpiDefinition(
         key="show_up_rate",
         label="Show-up rate",
         numerator="ENGAGED",
@@ -582,6 +597,28 @@ def workforce_coverage(
     and this returns "not measured" rather than a flattering approximation.
     """
     settings = settings or get_settings()
+
+    # No roster means no denominator and no way to recognise a person across
+    # channels. Falling through would divide 0 reached by a configured headcount
+    # and report a confident, red 0% — which is not a low coverage figure, it is
+    # the absence of one.
+    resolved = query_df(
+        con, "SELECT COUNT(*) AS n FROM v_recipient_identity"
+    )
+    if resolved.empty or int(resolved.iloc[0]["n"]) == 0:
+        return KpiValue(
+            key="coverage_rate",
+            label="Workforce coverage",
+            value=None,
+            status=SupportStatus.NOT_MEASURED,
+            caveats=(
+                "No employee roster is loaded, so no channel identifier can be "
+                "resolved to a person and workforce coverage cannot be measured. "
+                "Load an HR extract to enable it.",
+            ),
+            formula="distinct employees reached (>= Opened) / in-scope headcount",
+        )
+
     where, params = filters.where("r", include_dates=False)
     segment_where, segment_params = filters.segment_where("e")
 

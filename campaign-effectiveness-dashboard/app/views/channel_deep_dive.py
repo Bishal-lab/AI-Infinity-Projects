@@ -12,6 +12,14 @@ from components.theme import CHROME, channel_colours, detect_mode
 from comms_dashboard.metrics.rag import status_for
 
 
+def _pass_mark(measures: pd.DataFrame, default: float = 70.0) -> float:
+    """The assessment pass mark reported by the export, if there is one."""
+    if "pass_mark" not in measures.columns:
+        return default
+    values = measures["pass_mark"].dropna()
+    return float(values.mode().iloc[0]) if not values.empty else default
+
+
 def render() -> None:
     st.title("Channel deep dive")
     version = data_access.data_version()
@@ -133,7 +141,14 @@ def render() -> None:
         with left:
             st.subheader("Assessment scores")
             st.plotly_chart(
-                score_histogram(measures["score"], mode=mode),
+                score_histogram(
+                    measures["score"],
+                    # The course's own pass mark, where the export supplies it.
+                    # A hard-coded default would draw the threshold line in the
+                    # wrong place for any course that does not use it.
+                    pass_mark=_pass_mark(measures),
+                    mode=mode,
+                ),
                 use_container_width=True,
                 config={"displayModeBar": False},
             )

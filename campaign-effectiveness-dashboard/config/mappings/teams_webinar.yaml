@@ -3,9 +3,15 @@
 # The organiser downloads this per event from the Teams meeting. It contains no
 # campaign identifier, so the campaign is resolved from the filename pattern or
 # assigned by the admin in the Data & admin page before the load is committed.
+#
+# IMPORTANT: the plain attendance report lists only people who ATTENDED. It has
+# no invite list and no registration column, so it cannot tell you how many were
+# reached — Targeted and Registered come out as "not measured", and the adapter
+# refuses to treat the attendee count as an audience. To get those stages,
+# export the event's registration report as well.
 
 source: teams_webinar
-mapping_version: "1.0"
+mapping_version: "1.1"
 display_name: MS Teams webinar attendance report
 grain: recipient
 
@@ -13,9 +19,12 @@ detect:
   priority: 10
   filename_glob: ["*teams*", "*webinar*", "*townhall*", "*attendance*"]
   header_fingerprint:
-    strong: ["Attendance Duration", "Registration Status", "Session Duration"]
-    weak: ["Full Name", "First Join", "Last Leave", "User Principal Name", "Invited", "Attended"]
-    exclude: ["Course Name", "Recipient Email", "Message Template"]
+    strong: ["Attendance Duration", "Registration Status", "Session Duration",
+             "In-Meeting Duration", "Participant ID (UPN)"]
+    weak: ["Full Name", "First Join", "Last Leave", "User Principal Name",
+           "Invited", "Attended", "Role", "Engagement: Camera On"]
+    exclude: ["Course Name", "Course/Training Name", "Recipient Email",
+              "Message Template"]
   min_score: 4
 
 read:
@@ -31,7 +40,8 @@ keys:
     fallback_from_filename: 'teams_webinar_(?P<campaign>[A-Za-z0-9._-]+?)_\d{4}-\d{2}'
     required: true
   recipient:
-    aliases: ["User Principal Name", "Email", "Participant Email", "UPN"]
+    aliases: ["Participant ID (UPN)", "User Principal Name", "Email",
+              "Participant Email", "UPN"]
     id_type: upn
     canonicalise: [strip, lower]
     required: true
@@ -40,10 +50,12 @@ fields:
   targeted:
     const: true
     type: bool
+  # Optional on purpose. An attendance-only report has no registration column,
+  # and its absence must yield "not measured" rather than rejecting the file.
   opened:
     aliases: ["Registration Status", "Registered"]
     type: bool
-    required: true
+    required: false
     true_values: ["registered", "yes", "true", "1", "accepted"]
     false_values: ["not registered", "invited", "declined", "no", "false", "0"]
   engaged:
@@ -70,15 +82,48 @@ fields:
     aliases: ["Registered On", "Registration Time"]
     type: datetime
     required: false
-  department:
-    aliases: ["Department", "Dept"]
+  engaged_at:
+    aliases: ["First Join", "Join Time"]
+    type: datetime
+    required: false
+  left_at:
+    aliases: ["Last Leave", "Leave Time"]
+    type: datetime
+    required: false
+  # The participant name often carries the location, e.g.
+  # "Participant 4 (Chennai - Agency)". The adapter extracts it when no
+  # department column exists.
+  participant_name:
+    aliases: ["Name", "Full Name", "Participant Name"]
     type: string
+    required: false
+  department:
+    aliases: ["Department", "Dept", "City", "Location"]
+    type: string
+    required: false
+  role:
+    aliases: ["Role", "Participant Role"]
+    type: string
+    required: false
+  # In-meeting interaction counters, summed into `interactions` by the adapter.
+  camera_on:
+    aliases: ["Engagement: Camera On"]
+    type: number
+    required: false
+  raise_hands:
+    aliases: ["Engagement: Raise Hands"]
+    type: number
+    required: false
+  unmute:
+    aliases: ["Engagement: Unmute"]
+    type: number
     required: false
 
 # COMPLETED is derived in the adapter from
-# attendance_minutes / session_minutes >= rules.webinar_completion_fraction.
-# ENGAGED falls back to attendance_minutes > 0 when no explicit attended column
-# exists — see comms_dashboard/ingest/adapters/teams_webinar.py.
+# attendance_minutes / session_minutes >= rules.webinar_completion_fraction,
+# with session_minutes derived from the observed meeting span when the export
+# has no scheduled-duration column. ENGAGED falls back to attendance > 0.
+# See comms_dashboard/ingest/adapters/teams_webinar.py.
 
 on_unknown_columns: warn
 on_missing_optional: warn

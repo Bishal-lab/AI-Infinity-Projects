@@ -24,13 +24,35 @@ class VivaEngageAdapter(SourceAdapter):
     source = "viva_engage"
     grain = "aggregate"
 
+    #: Everything that counts as an interaction. Member and non-member columns
+    #: are summed together — the daily community export splits every measure in
+    #: two, and a reaction is a reaction whoever left it.
+    INTERACTION_COLUMNS = (
+        "reactions", "reactions_nonmembers",
+        "comments", "comments_nonmembers",
+        "shares", "answers", "questions",
+    )
+    IMPRESSION_COLUMNS = ("impressions", "impressions_nonmembers")
+
     def post_process(self, canonical: pd.DataFrame, ctx: LoadContext) -> pd.DataFrame:
-        for column in ("reactions", "comments", "shares"):
-            if column not in canonical.columns:
-                canonical[column] = 0.0
-        canonical["interaction_events"] = (
-            canonical[["reactions", "comments", "shares"]].fillna(0).sum(axis=1)
-        )
+        def total(columns: tuple[str, ...]) -> pd.Series:
+            present = [c for c in columns if c in canonical.columns]
+            if not present:
+                return pd.Series(0.0, index=canonical.index)
+            return canonical[present].apply(pd.to_numeric, errors="coerce").fillna(0).sum(axis=1)
+
+        canonical["interaction_events"] = total(self.INTERACTION_COLUMNS)
+        canonical["impressions_total"] = total(self.IMPRESSION_COLUMNS)
+
+        if "audience_size" not in ctx.mapped_fields:
+            ctx.report.add_issue(
+                "warning",
+                "VIVA_NO_AUDIENCE_SIZE",
+                "this export has no community-size column, so there is no "
+                "denominator: Targeted reports 'not measured' and no reach "
+                "*rate* can be shown — only the reach figure itself.",
+                column_name="audience_size",
+            )
 
         # Unique viewers is the only person-shaped number Viva gives us. Where
         # it is absent, impressions cannot stand in — impressions count views,

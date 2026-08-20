@@ -122,6 +122,10 @@ CREATE TABLE IF NOT EXISTS fact_recipient_stage (
     attendance_minutes DOUBLE,
     session_minutes    DOUBLE,
     interactions       INTEGER,
+    attempts           INTEGER,
+    -- The export's own pass mark, so the assessment chart draws the threshold
+    -- the course actually used instead of a hard-coded guess.
+    pass_mark          DOUBLE,
     department         TEXT,               -- from the export, used only when no roster is loaded
 
     batch_id           BIGINT,

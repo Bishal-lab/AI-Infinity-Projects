@@ -7,10 +7,11 @@ boundary. Same air-gap friendliness as SQLite, far better at this workload.
 
 Two DuckDB behaviours are handled deliberately here:
 
-* **Single writer.** One process may hold the file for writing. The app keeps a
-  single cached connection and serialises writes through ``write_lock``; a
-  second process (an admin poking at the file, a cron loader running while
-  someone browses) must open it read-only or it will fail to take the lock.
+* **Single process.** One process may hold the file, and the lock excludes
+  readers too — opening ``read_only=True`` while the dashboard is running is
+  refused just the same. The app keeps a single cached connection and
+  serialises writes through ``write_lock``; anything else that needs the data
+  while the app is up has to work on a copy of the file.
 * **Extension autoloading downloads from the internet.** Disabled at connect,
   because a dashboard that phones home on first query is not an on-prem
   dashboard. Excel is read through openpyxl in Python instead.

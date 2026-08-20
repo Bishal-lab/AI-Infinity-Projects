@@ -111,6 +111,13 @@ def channel_funnel_chart(
     stage_order = (
         per_channel.sort_values("stage_ordinal")["stage"].drop_duplicates().tolist()
     )
+    # Persons only. An interaction count is not on the same scale as a headcount
+    # — a community with 2,542 reactions and 389 viewers would flatten every
+    # person-counting channel to an invisible sliver against it. Events get
+    # their own chart rather than a second y-axis, which would let the author
+    # pick the story by picking the scales.
+    per_channel = per_channel[per_channel["measure_unit"] == "persons"]
+
     for channel, block in per_channel.groupby("channel", sort=False):
         block = block.sort_values("stage_ordinal")
         usable = block[block["support_status"] == "measured"]

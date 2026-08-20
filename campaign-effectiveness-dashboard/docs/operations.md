@@ -33,15 +33,20 @@ does not compete with someone browsing for the write lock.
 
 ## The single-writer rule
 
-One process may hold the warehouse file for writing. In practice:
+One process may hold the warehouse file, and DuckDB's lock excludes **readers as well as writers**.
+In practice:
 
 - The app keeps one cached connection and serialises writes through a lock.
-- A second process must open the file read-only:
+- While the dashboard is running, a second process cannot open the file at all. Read-only does not
+  help — `duckdb -readonly` and `duckdb.connect(read_only=True)` are both refused with
+  `IO Error: Could not set lock on file`.
+- To query or export from a shell while the app is up, either stop the app, or work on a copy:
   ```bash
-  duckdb -readonly data/warehouse/comms.duckdb
+  cp data/warehouse/comms.duckdb /tmp/snapshot.duckdb
+  duckdb /tmp/snapshot.duckdb
   ```
-- Opening it read-write from a shell while the app is running **will** fail to take the lock. This
-  bites someone eventually; it is not a fault.
+- This bites someone eventually; it is not a fault. It is also why scheduled loads should run from
+  the CLI on a schedule the browsing window does not overlap, rather than from the UI.
 
 ## Checking the state
 

@@ -52,6 +52,9 @@ _PASSTHROUGH_COLUMNS = (
     "assessment_passed",
     "attendance_minutes",
     "session_minutes",
+    "interactions",
+    "attempts",
+    "pass_mark",
     "department",
 )
 _TIMESTAMP_COLUMNS = (
@@ -61,7 +64,8 @@ _TIMESTAMP_COLUMNS = (
     "engaged_at",
     "completed_at",
 )
-_MAX_MERGE_COLUMNS = ("progress_pct", "score", "attendance_minutes", "session_minutes")
+_MAX_MERGE_COLUMNS = ("progress_pct", "score", "attendance_minutes",
+                      "session_minutes", "interactions", "attempts")
 
 _SLUG = re.compile(r"[^a-z0-9]+")
 
@@ -613,6 +617,7 @@ def _upsert_recipient_rows(con: duckdb.DuckDBPyConnection, frame: pd.DataFrame) 
     updates += [highest(c) for c in _MAX_MERGE_COLUMNS]
     updates += [
         "department = COALESCE(excluded.department, fact_recipient_stage.department)",
+        "pass_mark = COALESCE(excluded.pass_mark, fact_recipient_stage.pass_mark)",
         "batch_id = excluded.batch_id",
         "updated_at = now()",
     ]
@@ -622,7 +627,8 @@ def _upsert_recipient_rows(con: duckdb.DuckDBPyConnection, frame: pd.DataFrame) 
         + list(STAGE_COLUMNS.values())
         + list(_TIMESTAMP_COLUMNS)
         + ["bounced", "opted_out", "progress_pct", "score", "assessment_passed",
-           "attendance_minutes", "session_minutes", "department", "batch_id"]
+           "attendance_minutes", "session_minutes", "interactions", "attempts",
+           "pass_mark", "department", "batch_id"]
     )
     select_list = ", ".join(
         f"try_cast({c} AS TIMESTAMP) AS {c}" if c in _TIMESTAMP_COLUMNS else c

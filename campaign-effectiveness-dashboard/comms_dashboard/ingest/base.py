@@ -62,9 +62,22 @@ class LoadContext:
     path: Path
     report: LoadReport
     campaign_override: str | None = None
+    #: Canonical fields the export actually supplied a column for. An adapter
+    #: needs this to tell "the column was there and said no" from "the column
+    #: was never there" — a distinction the parsed values alone cannot carry.
+    mapped_fields: set[str] = field(default_factory=set)
 
     @property
     def dayfirst(self) -> bool:
+        """Whether 03/04/2026 means 3 April, for *this* source.
+
+        The mapping wins over the global setting when it declares an order, so
+        one platform exporting MM/DD/YYYY does not force every other platform's
+        dates to be misread.
+        """
+        order = self.mapping.date_order
+        if order is not None:
+            return order == "DMY"
         return self.settings.dayfirst
 
 
@@ -171,6 +184,7 @@ class SourceAdapter:
                 continue
 
             used_columns.add(column)
+            ctx.mapped_fields.add(name)
             result = normalize.coerce(
                 df[column],
                 spec.type,

@@ -21,7 +21,7 @@ involved.
 | Charts | [Plotly](https://plotly.com/python/) via `st.plotly_chart` (plotly.js is bundled inside Streamlit's own static assets — no CDN) |
 | Ingestion | pandas + openpyxl, driven by editable YAML column mappings |
 | Export | XlsxWriter, using native Excel charts (no headless browser needed) |
-| Tests | pytest — 116 tests, including an assertion that the whole pipeline runs with every socket blocked |
+| Tests | pytest — 134 tests, including an assertion that the whole pipeline runs with every socket blocked |
 
 Everything is a pure pip wheel. Nothing here needs a database server, a browser engine, or
 administrator privileges on the host.
@@ -113,7 +113,8 @@ campaign-effectiveness-dashboard/
 ├── data/samples/                        ← synthetic exports, incl. edge cases
 ├── docker/                              ← Dockerfile + compose
 ├── docs/                                ← mapping guide, KPI definitions, operations
-└── tests/                               ← 116 tests
+├── profiles/agency-ely/                 ← worked example against real exports
+└── tests/                               ← 134 tests
 ```
 
 ## Setup
@@ -140,6 +141,11 @@ pip install --no-index --find-links=wheelhouse -r requirements.txt
 
 > Requires Python 3.11 or newer. This project was built and tested against 3.11.
 
+> **Connecting real exports?** [`profiles/agency-ely/`](profiles/agency-ely/) is a worked example
+> against three genuine platform exports (an LMS course, a Teams attendance report and a Viva
+> community feed), including the three things that data taught us — see
+> [its README](profiles/agency-ely/README.md).
+
 ### Step 2 — See it working with the sample data
 
 ```bash
@@ -164,9 +170,11 @@ This is the whole configuration job, and it is a YAML edit rather than a code ch
 
 Two things to get right before the first real load:
 
-- **`parsing.date_order` in `config/settings.yaml`.** `03/04/2026` is genuinely ambiguous. The app
-  will not guess — set `DMY` or `MDY` to match your exports. Guessing per-file is the most common
-  silent data corruption in tools like this.
+- **Date order.** `03/04/2026` is genuinely ambiguous and the app will not guess. Set
+  `parsing.date_order` in `config/settings.yaml` to whatever most of your exports use, and override
+  it per platform with `read.date_order` in that source's mapping file when one disagrees — which
+  happens more often than you would like. Guessing per file is the most common silent data
+  corruption in tools like this.
 - **Load a campaign registry and an employee roster first.** The registry supplies campaign names,
   owners and targets the platform exports do not carry. The roster is what lets a WhatsApp phone
   number and an LMS login be recognised as the same person — without it, coverage analysis and
@@ -240,7 +248,7 @@ and still wrong. Each headline tile names the channels it is based on.
 
 ```bash
 pip install -r requirements-dev.txt
-pytest -q            # 116 tests, ~50s
+pytest -q            # 134 tests, ~50s
 ```
 
 The suite is organised around the claims that would be most damaging to get wrong:
@@ -253,6 +261,7 @@ The suite is organised around the claims that would be most damaging to get wron
 | `test_kpis.py` | n/a semantics, events never divided by people, the consistent cross-channel basis, dedupe availability |
 | `test_privacy_and_offline.py` | no direct identifier survives ingestion; small-group and complementary suppression; **the whole pipeline runs with every socket blocked** |
 | `test_config_and_export.py` | config validation messages name the offending key; the Excel pack writes "n/a" as words and carries no person-level rows |
+| `test_real_formats.py` | the shapes real exports actually arrive in: a per-source date order, an attendance report never claiming reach, daily community reach never being summed, and coverage reading "not measured" rather than a red 0% when no roster exists |
 
 ## Security notes
 
@@ -325,5 +334,6 @@ the point where it would otherwise mislead.
       (`data/samples/`)
 - [x] Management-ready export (`comms_dashboard/export/excel.py`)
 - [x] Deployment for air-gapped environments — wheelhouse **(verified)**, Docker **(untested here)**
-- [x] Test suite, 116 tests including an executable no-network guarantee (`tests/`)
+- [x] Test suite, 134 tests including an executable no-network guarantee (`tests/`)
+- [x] Verified against real platform exports — see `profiles/agency-ely/`
 - [x] Documentation: this file plus `docs/`

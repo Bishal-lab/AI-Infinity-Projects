@@ -410,6 +410,26 @@ class SourceMapping:
     on_missing_optional: str = "warn"
     on_missing_required: str = "reject_file"
 
+    @property
+    def date_order(self) -> str | None:
+        """Per-source day/month order, or None to inherit the global setting.
+
+        Two platforms in the same organisation routinely disagree: an LMS may
+        export MM/DD/YYYY while the mail tool exports DD/MM/YYYY. A single
+        global setting cannot be right for both, and picking one silently
+        corrupts the other — so a mapping may override it for its own source.
+        """
+        order = self.read.get("date_order")
+        if order is None:
+            return None
+        order = str(order).upper()
+        if order not in {"DMY", "MDY", "ISO"}:
+            raise ConfigError(
+                f"{self.source}.yaml: read.date_order must be DMY, MDY or ISO, "
+                f"got {order!r}"
+            )
+        return order
+
     def required_field_names(self) -> tuple[str, ...]:
         return tuple(f.name for f in self.fields.values() if f.required and not f.is_const)
 

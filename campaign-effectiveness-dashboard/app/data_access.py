@@ -175,6 +175,7 @@ def recipient_measures(filters: FilterState, channel: str, version: int) -> pd.D
         connection(),
         f"""
         SELECT r.attendance_minutes, r.session_minutes, r.score, r.progress_pct,
+               r.pass_mark, r.interactions, r.attempts,
                r.opened, r.engaged, r.completed
         FROM fact_recipient_stage r
         WHERE {where} AND r.channel = ?

@@ -22,7 +22,11 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from comms_dashboard import db  # noqa: E402
 from comms_dashboard.config import get_settings  # noqa: E402
-from comms_dashboard.ingest.loader import ingest_inbox, resolve_identities  # noqa: E402
+from comms_dashboard.ingest.loader import (  # noqa: E402
+    ingest_file,
+    ingest_inbox,
+    resolve_identities,
+)
 from comms_dashboard.models import LoadReport  # noqa: E402
 
 STATUS_MARK = {
@@ -54,6 +58,9 @@ def cmd_load(args: argparse.Namespace) -> int:
     settings = get_settings()
     inbox = settings.path("inbox")
     inbox.mkdir(parents=True, exist_ok=True)
+
+    if args.file:
+        return _load_single(args, settings)
 
     if args.samples:
         samples = settings.path("samples")
@@ -89,6 +96,36 @@ def cmd_load(args: argparse.Namespace) -> int:
     )
     con.close()
     return 1 if failures else 0
+
+
+def _load_single(args: argparse.Namespace, settings) -> int:
+    """Load one named file, optionally forcing its source and campaign.
+
+    Exists for the awkward exports: a Teams attendance report carries no
+    campaign identifier and no usable filename pattern, so without this the only
+    way to assign one is by hand in the admin page. This is the same seam the
+    admin page uses, made scriptable so a monthly load can be repeated exactly.
+    """
+    path = Path(args.file)
+    con = db.connect(settings=settings)
+    db.init_schema(con)
+
+    report = ingest_file(
+        con,
+        path,
+        source_override=args.source,
+        campaign_override=args.campaign,
+        force=args.force,
+        settings=settings,
+        archive=not args.keep,
+    )
+    print()
+    _print_report(report)
+    resolved = resolve_identities(con)
+    if resolved:
+        print(f"\n{resolved:,} recipient row(s) resolve to a known employee via the roster.")
+    con.close()
+    return 1 if report.status == "rejected" else 0
 
 
 def cmd_status(args: argparse.Namespace) -> int:
@@ -140,6 +177,25 @@ def main(argv: list[str] | None = None) -> int:
     )
     load.add_argument(
         "--keep", action="store_true", help="leave files in the inbox instead of archiving"
+    )
+    load.add_argument(
+        "--file", help="load one named file instead of sweeping the inbox"
+    )
+    load.add_argument(
+        "--source",
+        help="force the source for --file, skipping detection "
+             "(e.g. teams_webinar); use when a file cannot be identified from "
+             "its headers",
+    )
+    load.add_argument(
+        "--campaign",
+        help="assign --file to this campaign id, overriding anything in the "
+             "file; required for exports with no campaign column, such as a "
+             "Teams attendance report",
+    )
+    load.add_argument(
+        "--force", action="store_true",
+        help="reload even if this exact file was loaded before",
     )
     load.set_defaults(func=cmd_load)
 

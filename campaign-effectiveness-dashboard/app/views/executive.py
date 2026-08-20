@@ -74,11 +74,26 @@ def render() -> None:
 
     with right:
         st.subheader("Channels side by side")
-        st.caption("Bars appear only where the channel measures that stage.")
+        st.caption(
+            "People only, and bars appear only where the channel measures that "
+            "stage. Interaction counts are on a different scale entirely and are "
+            "reported separately below."
+        )
         st.plotly_chart(
             channel_funnel_chart(per_channel, colours, mode), use_container_width=True,
             config={"displayModeBar": False},
         )
+        events = per_channel[
+            (per_channel["measure_unit"] == "events")
+            & (per_channel["support_status"] == "measured")
+        ]
+        if not events.empty:
+            summary = ", ".join(
+                f"{r['channel_display']} {r['stage'].title()}: "
+                f"{r['metric_value']:,.0f} interactions"
+                for _, r in events.iterrows()
+            )
+            st.caption(f"Counted in interactions, not people — {summary}.")
 
     stage_support_note(per_channel, mode)
 

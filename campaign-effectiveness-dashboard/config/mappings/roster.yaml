@@ -19,7 +19,11 @@ detect:
   header_fingerprint:
     strong: ["Employee ID", "Department", "Grade Band"]
     weak: ["Region", "Country", "Site", "Work Email", "UPN", "Mobile", "Employment Type"]
-    exclude: ["Campaign", "Course Name", "Attendance Duration"]
+    # An LMS export also carries Employee ID; these headers keep the roster
+    # mapping from competing with it for the same file.
+    exclude: ["Campaign", "Course Name", "Attendance Duration",
+              "Course/Training Name", "Node Status", "Completion Status",
+              "In-Meeting Duration"]
   min_score: 4
 
 read:
