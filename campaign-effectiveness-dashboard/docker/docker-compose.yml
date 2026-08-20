@@ -1,0 +1,43 @@
+# Run from the project root:  docker compose -f docker/docker-compose.yml up -d
+#
+# data/ and config/ are bind mounts, so drops, the warehouse and your column
+# mappings all survive an image upgrade.
+
+services:
+  dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: comms-dashboard:1.0
+    container_name: comms-dashboard
+    restart: unless-stopped
+    ports:
+      # Bound to loopback on purpose. Streamlit has NO authentication of its
+      # own — anyone who can reach this port sees every campaign. Publish it
+      # more widely only behind a reverse proxy that terminates SSO.
+      - "127.0.0.1:8501:8501"
+    volumes:
+      - ../data:/app/data
+      - ../config:/app/config
+    environment:
+      STREAMLIT_BROWSER_GATHER_USAGE_STATS: "false"
+    # The image runs as uid 10001; the mounted data directory must be writable
+    # by it. On a host where that is inconvenient, set `user: "${UID}:${GID}"`
+    # here instead and drop the USER line from the Dockerfile.
+
+  # Scheduled ingestion. Preferred over loading from the UI in production:
+  # DuckDB allows a single writer, so a background load does not compete with
+  # someone browsing for the write lock.
+  #
+  # Uncomment to run an hourly inbox sweep.
+  #
+  # loader:
+  #   image: comms-dashboard:1.0
+  #   container_name: comms-dashboard-loader
+  #   restart: unless-stopped
+  #   depends_on: [dashboard]
+  #   volumes:
+  #     - ../data:/app/data
+  #     - ../config:/app/config
+  #   entrypoint: ["sh", "-c",
+  #     "while true; do python -m comms_dashboard.ingest.cli load; sleep 3600; done"]

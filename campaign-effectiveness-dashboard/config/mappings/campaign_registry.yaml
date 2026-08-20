@@ -1,0 +1,77 @@
+# Campaign registry — the comms team's own list of campaigns.
+#
+# Supplies the human-readable names, objectives, owners and per-campaign
+# targets that the platform exports do not carry. Load it before the channel
+# exports so campaign attribution has something to resolve against.
+
+source: campaign_registry
+mapping_version: "1.0"
+display_name: Campaign registry
+grain: dimension
+
+detect:
+  priority: 20
+  filename_glob: ["*campaign_registry*", "*campaigns*"]
+  header_fingerprint:
+    strong: ["Campaign ID", "Campaign Name", "Objective"]
+    weak: ["Programme", "Owner Team", "Start Date", "End Date", "Mandatory", "Target Population"]
+    exclude: ["Recipient Email", "Attendance Duration"]
+  min_score: 4
+
+read:
+  sheet: 0
+  header_row: 1
+  encoding: auto
+  delimiter: auto
+  na_values: ["", "-", "N/A", "NULL"]
+
+keys:
+  campaign:
+    aliases: ["Campaign ID", "Campaign Code"]
+    required: true
+
+fields:
+  campaign_name:
+    aliases: ["Campaign Name", "Name", "Title"]
+    type: string
+    required: true
+  programme:
+    aliases: ["Programme", "Program", "Workstream"]
+    type: string
+    required: false
+  objective:
+    aliases: ["Objective", "Type", "Purpose"]
+    type: string
+    required: false
+  owner_team:
+    aliases: ["Owner Team", "Owner", "Accountable Team"]
+    type: string
+    required: false
+  start_date:
+    aliases: ["Start Date", "Launch Date"]
+    type: date
+    required: false
+  end_date:
+    aliases: ["End Date", "Close Date"]
+    type: date
+    required: false
+  mandatory:
+    aliases: ["Mandatory", "Compulsory"]
+    type: bool
+    required: false
+  target_population:
+    aliases: ["Target Population", "Audience Size", "In Scope Headcount"]
+    type: number
+    required: false
+  target_completion_rate:
+    aliases: ["Target Completion Rate", "Completion Target"]
+    type: percent
+    required: false
+  target_engagement_rate:
+    aliases: ["Target Engagement Rate", "Engagement Target"]
+    type: percent
+    required: false
+
+on_unknown_columns: ignore
+on_missing_optional: ignore
+on_missing_required: reject_file

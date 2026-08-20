@@ -1,0 +1,99 @@
+# Employee roster (optional but recommended).
+#
+# Loading this unlocks: coverage by department / region / grade, the
+# "never reached on any channel" figure, and cross-channel deduplication.
+# Without it the dashboard still works — those features degrade with a visible
+# banner rather than disappearing.
+#
+# The identity columns are what let a WhatsApp phone number and an LMS user id
+# resolve to the same person. Provide as many as your HR extract allows.
+
+source: roster
+mapping_version: "1.0"
+display_name: Employee roster
+grain: dimension
+
+detect:
+  priority: 20
+  filename_glob: ["*roster*", "*employee*", "*headcount*", "*hr_extract*"]
+  header_fingerprint:
+    strong: ["Employee ID", "Department", "Grade Band"]
+    weak: ["Region", "Country", "Site", "Work Email", "UPN", "Mobile", "Employment Type"]
+    exclude: ["Campaign", "Course Name", "Attendance Duration"]
+  min_score: 4
+
+read:
+  sheet: 0
+  header_row: 1
+  encoding: auto
+  delimiter: auto
+  na_values: ["", "-", "N/A", "NULL"]
+
+keys:
+  employee:
+    aliases: ["Employee ID", "Employee Number", "Worker ID"]
+    # Must match ID_TYPE_CANONICALISATION['employee_no'] in ingest/identity.py,
+    # so a channel export keyed on employee number hashes to the same value.
+    id_type: employee_no
+    canonicalise: [strip, upper]
+    required: true
+
+fields:
+  work_email:
+    aliases: ["Work Email", "Email", "Email Address"]
+    type: string
+    required: false
+  upn:
+    aliases: ["UPN", "User Principal Name"]
+    type: string
+    required: false
+  mobile:
+    aliases: ["Mobile", "Mobile Number", "Phone Number"]
+    type: string
+    required: false
+  lms_user_id:
+    aliases: ["LMS User ID", "Learner ID"]
+    type: string
+    required: false
+  department:
+    aliases: ["Department", "Dept"]
+    type: string
+    required: true
+  sub_department:
+    aliases: ["Sub Department", "Team"]
+    type: string
+    required: false
+  region:
+    aliases: ["Region"]
+    type: string
+    required: false
+  country:
+    aliases: ["Country"]
+    type: string
+    required: false
+  site:
+    aliases: ["Site", "Location", "Office"]
+    type: string
+    required: false
+  grade_band:
+    aliases: ["Grade Band", "Grade", "Band", "Level"]
+    type: string
+    required: false
+  employment_type:
+    aliases: ["Employment Type", "Contract Type"]
+    type: string
+    required: false
+  is_people_manager:
+    aliases: ["Is People Manager", "People Manager", "Manager Flag"]
+    type: bool
+    required: false
+  is_active:
+    aliases: ["Is Active", "Active", "Status"]
+    type: bool
+    required: false
+    true_values: ["active", "yes", "true", "1"]
+    false_values: ["inactive", "leaver", "terminated", "no", "false", "0"]
+
+on_unknown_columns: ignore
+on_missing_optional: ignore
+on_missing_required: reject_file

@@ -1,0 +1,201 @@
+Campaign Name,Recipient Email,Department,Send Time,Bounced,Unique Opens,Unique Clicks,First Open,Unsubscribed
+cyber-aware-2026q1,cara.ahmed@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,xenia.rossi@example.com,Marketing,12/01/2026 08:30,No,1,1,12/01/2026 12:32,No
+cyber-aware-2026q1,ben.zhang@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,yusuf.hansen@example.com,HR,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,grace.jensen@example.com,Finance,12/01/2026 08:30,No,1,1,13/01/2026 04:33,No
+cyber-aware-2026q1,wei.yilmaz@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,ben.zhang2@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,hiro.patel@example.com,HR,12/01/2026 08:30,No,1,0,12/01/2026 13:27,No
+cyber-aware-2026q1,farid.fischer@example.com,Marketing,12/01/2026 08:30,No,1,0,12/01/2026 10:03,No
+cyber-aware-2026q1,wei.rossi@example.com,Manufacturing,12/01/2026 08:30,No,5,0,14/01/2026 13:08,No
+cyber-aware-2026q1,quinn.okafor@example.com,HR,12/01/2026 08:30,No,3,0,12/01/2026 09:32,No
+cyber-aware-2026q1,viktor.patel@example.com,Finance,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,elena.tanaka@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,ines.lopez@example.com,Technology,12/01/2026 08:30,No,1,0,13/01/2026 05:06,No
+cyber-aware-2026q1,ben.jensen@example.com,Finance,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,maya.hansen@example.com,Technology,12/01/2026 08:30,No,5,0,12/01/2026 09:58,No
+cyber-aware-2026q1,quinn.muller@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,grace.lopez@example.com,Marketing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,kira.ueda@example.com,Finance,12/01/2026 08:30,No,2,0,12/01/2026 10:28,No
+cyber-aware-2026q1,elena.iyer@example.com,Technology,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,yusuf.kowalski@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,priya.ahmed@example.com,Sales,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,yusuf.iyer@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,grace.hansen@example.com,Manufacturing,12/01/2026 08:30,No,1,0,12/01/2026 12:43,No
+cyber-aware-2026q1,bruno.silva@example.com,Marketing,12/01/2026 08:30,No,2,0,13/01/2026 05:26,No
+cyber-aware-2026q1,olu.chen@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,wei.hansen@example.com,Marketing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,aisha.novak@example.com,Technology,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,dmitri.vargas@example.com,Sales,12/01/2026 08:30,No,2,0,12/01/2026 09:30,No
+cyber-aware-2026q1,ben.evans@example.com,Marketing,12/01/2026 08:30,No,2,2,12/01/2026 12:43,No
+cyber-aware-2026q1,hiro.lopez@example.com,Legal,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,aisha.patel@example.com,Manufacturing,12/01/2026 08:30,No,2,0,12/01/2026 12:30,No
+cyber-aware-2026q1,rosa.yilmaz@example.com,Sales,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,daniel.fischer@example.com,Finance,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,maya.zhang@example.com,Technology,12/01/2026 08:30,No,2,1,12/01/2026 10:28,No
+cyber-aware-2026q1,grace.tanaka@example.com,Marketing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,amara.walsh@example.com,Operations,12/01/2026 08:30,Yes,0,0,,No
+cyber-aware-2026q1,wei.novak@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,wei.yilmaz2@example.com,Manufacturing,12/01/2026 08:30,No,1,1,12/01/2026 12:58,No
+cyber-aware-2026q1,grace.fischer@example.com,Marketing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,ben.dubois@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,wei.walsh@example.com,Marketing,12/01/2026 08:30,No,2,0,12/01/2026 10:26,No
+cyber-aware-2026q1,olu.chen2@example.com,Finance,12/01/2026 08:30,No,1,1,12/01/2026 10:14,No
+cyber-aware-2026q1,chloe.okafor@example.com,Sales,12/01/2026 08:30,No,1,0,12/01/2026 09:36,No
+cyber-aware-2026q1,bruno.rossi@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,dmitri.lopez@example.com,HR,12/01/2026 08:30,No,1,1,12/01/2026 10:15,No
+cyber-aware-2026q1,bruno.ueda@example.com,Technology,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,grace.tanaka2@example.com,Technology,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,ben.ahmed@example.com,Manufacturing,12/01/2026 08:30,No,1,0,12/01/2026 10:03,No
+cyber-aware-2026q1,amara.walsh2@example.com,Technology,12/01/2026 08:30,No,1,1,12/01/2026 13:22,No
+cyber-aware-2026q1,jonas.kowalski@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,aisha.ahmed@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,viktor.patel2@example.com,Technology,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,yusuf.brown@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,xenia.silva@example.com,Marketing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,liam.ahmed@example.com,Manufacturing,12/01/2026 08:30,No,3,0,12/01/2026 09:43,No
+cyber-aware-2026q1,zoe.hansen@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,rosa.chen@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,viktor.yilmaz@example.com,Sales,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,grace.muller@example.com,Marketing,12/01/2026 08:30,No,3,0,12/01/2026 10:17,No
+cyber-aware-2026q1,tariq.zhang@example.com,Marketing,12/01/2026 08:30,No,1,0,13/01/2026 05:01,No
+cyber-aware-2026q1,kira.jensen@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,sam.silva@example.com,Legal,12/01/2026 08:30,No,1,0,12/01/2026 13:15,No
+cyber-aware-2026q1,grace.walsh@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,olu.lopez@example.com,Technology,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,ben.muller@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,noah.lopez@example.com,Operations,12/01/2026 08:30,No,2,1,14/01/2026 12:34,No
+cyber-aware-2026q1,quinn.yilmaz@example.com,Technology,12/01/2026 08:30,No,2,1,13/01/2026 05:27,No
+cyber-aware-2026q1,chloe.yilmaz@example.com,Technology,12/01/2026 08:30,No,3,0,12/01/2026 13:13,No
+cyber-aware-2026q1,farid.muller@example.com,Sales,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,hiro.okafor@example.com,Sales,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,ben.walsh@example.com,Marketing,12/01/2026 08:30,No,1,0,13/01/2026 05:24,No
+cyber-aware-2026q1,maya.fischer@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,uma.jensen@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,rosa.okafor@example.com,Marketing,12/01/2026 08:30,No,2,0,14/01/2026 12:52,No
+cyber-aware-2026q1,aisha.rossi@example.com,Sales,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,uma.muller@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,tariq.vargas@example.com,Operations,12/01/2026 08:30,No,1,0,12/01/2026 13:22,No
+cyber-aware-2026q1,yusuf.tanaka@example.com,Marketing,12/01/2026 08:30,No,1,0,12/01/2026 13:11,No
+cyber-aware-2026q1,xenia.tanaka@example.com,Technology,12/01/2026 08:30,No,1,1,12/01/2026 09:53,No
+cyber-aware-2026q1,dmitri.dubois@example.com,Sales,12/01/2026 08:30,No,1,0,12/01/2026 12:52,No
+cyber-aware-2026q1,quinn.iyer@example.com,Technology,12/01/2026 08:30,No,1,0,13/01/2026 05:16,No
+cyber-aware-2026q1,farid.kowalski@example.com,Marketing,12/01/2026 08:30,No,3,0,12/01/2026 09:31,No
+cyber-aware-2026q1,daniel.chen@example.com,Technology,12/01/2026 08:30,No,1,0,12/01/2026 10:29,No
+cyber-aware-2026q1,cara.kowalski@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,cara.vargas@example.com,Technology,12/01/2026 08:30,No,1,0,12/01/2026 10:24,No
+cyber-aware-2026q1,amara.silva@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,amara.zhang@example.com,Marketing,12/01/2026 08:30,No,1,1,12/01/2026 09:34,No
+cyber-aware-2026q1,wei.novak2@example.com,HR,12/01/2026 08:30,No,1,0,12/01/2026 10:20,No
+cyber-aware-2026q1,quinn.walsh@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,aisha.novak2@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,yusuf.ueda@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,zoe.novak@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,xenia.chen@example.com,Technology,12/01/2026 08:30,No,2,0,12/01/2026 10:09,No
+cyber-aware-2026q1,hiro.jensen@example.com,Manufacturing,12/01/2026 08:30,No,1,0,12/01/2026 10:23,No
+cyber-aware-2026q1,cara.fischer@example.com,Technology,12/01/2026 08:30,No,1,0,12/01/2026 10:04,No
+cyber-aware-2026q1,yusuf.novak@example.com,Operations,12/01/2026 08:30,No,1,0,12/01/2026 10:07,No
+cyber-aware-2026q1,jonas.zhang@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,chloe.patel@example.com,HR,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,jonas.walsh@example.com,Manufacturing,12/01/2026 08:30,No,1,0,12/01/2026 13:22,No
+cyber-aware-2026q1,xenia.patel@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,cara.ahmed2@example.com,HR,12/01/2026 08:30,No,1,4,14/01/2026 13:24,No
+cyber-aware-2026q1,xenia.vargas@example.com,Manufacturing,12/01/2026 08:30,Yes,0,0,,No
+cyber-aware-2026q1,elena.kowalski@example.com,Technology,12/01/2026 08:30,No,1,0,13/01/2026 05:24,No
+cyber-aware-2026q1,aisha.silva@example.com,Operations,12/01/2026 08:30,No,1,1,12/01/2026 13:17,No
+cyber-aware-2026q1,viktor.okafor@example.com,Operations,12/01/2026 08:30,No,3,0,12/01/2026 13:02,No
+cyber-aware-2026q1,chloe.muller@example.com,Marketing,12/01/2026 08:30,No,1,0,12/01/2026 13:14,No
+cyber-aware-2026q1,ines.walsh@example.com,Finance,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,ben.dubois2@example.com,Technology,12/01/2026 08:30,Yes,0,0,,No
+cyber-aware-2026q1,aisha.yilmaz@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,liam.yilmaz@example.com,Manufacturing,12/01/2026 08:30,No,1,0,12/01/2026 13:10,No
+cyber-aware-2026q1,hiro.yilmaz@example.com,Finance,12/01/2026 08:30,Yes,0,0,,No
+cyber-aware-2026q1,hiro.fischer@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,ines.garcia@example.com,Manufacturing,12/01/2026 08:30,No,2,2,12/01/2026 10:06,No
+cyber-aware-2026q1,elena.brown@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,rosa.patel@example.com,Legal,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,elena.patel@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,hiro.vargas@example.com,Manufacturing,12/01/2026 08:30,No,2,0,14/01/2026 13:06,No
+cyber-aware-2026q1,jonas.yilmaz@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,tariq.silva@example.com,Finance,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,xenia.evans@example.com,Operations,12/01/2026 08:30,No,1,0,14/01/2026 13:07,No
+cyber-aware-2026q1,daniel.novak@example.com,Technology,12/01/2026 08:30,No,1,4,13/01/2026 05:08,No
+cyber-aware-2026q1,bruno.rossi2@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,noah.garcia@example.com,Operations,12/01/2026 08:30,No,2,0,12/01/2026 12:50,No
+cyber-aware-2026q1,daniel.ueda@example.com,HR,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,kira.okafor@example.com,Finance,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,aisha.jensen@example.com,Finance,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,jonas.walsh2@example.com,Operations,12/01/2026 08:30,No,2,2,12/01/2026 12:57,No
+cyber-aware-2026q1,hiro.novak@example.com,Technology,12/01/2026 08:30,No,1,0,13/01/2026 05:26,No
+cyber-aware-2026q1,ben.dubois3@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,grace.jensen2@example.com,Manufacturing,12/01/2026 08:30,No,3,1,13/01/2026 04:54,No
+cyber-aware-2026q1,dmitri.rossi@example.com,Marketing,12/01/2026 08:30,No,1,2,12/01/2026 12:43,No
+cyber-aware-2026q1,quinn.rossi@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,sam.yilmaz@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,viktor.kowalski@example.com,HR,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,wei.fischer@example.com,Finance,12/01/2026 08:30,No,1,1,13/01/2026 05:12,No
+cyber-aware-2026q1,yusuf.tanaka2@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,xenia.chen2@example.com,Sales,12/01/2026 08:30,No,3,0,12/01/2026 12:40,No
+cyber-aware-2026q1,hiro.brown@example.com,Operations,12/01/2026 08:30,No,1,0,12/01/2026 10:13,No
+cyber-aware-2026q1,jonas.kowalski2@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,viktor.rossi@example.com,HR,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,aisha.tanaka@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,olu.jensen@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,liam.garcia@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,amara.dubois@example.com,Technology,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,bruno.yilmaz@example.com,Manufacturing,12/01/2026 08:30,No,1,0,12/01/2026 09:51,No
+cyber-aware-2026q1,maya.hansen2@example.com,Technology,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,rosa.ahmed@example.com,Marketing,12/01/2026 08:30,No,2,0,12/01/2026 13:04,No
+cyber-aware-2026q1,sam.rossi@example.com,Technology,12/01/2026 08:30,No,2,0,12/01/2026 13:16,No
+cyber-aware-2026q1,quinn.chen@example.com,Manufacturing,12/01/2026 08:30,No,2,0,12/01/2026 12:40,No
+cyber-aware-2026q1,sam.evans@example.com,Technology,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,bruno.yilmaz2@example.com,Technology,12/01/2026 08:30,No,1,1,12/01/2026 13:06,No
+cyber-aware-2026q1,ben.silva@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,maya.rossi@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,cara.iyer@example.com,Marketing,12/01/2026 08:30,No,5,0,12/01/2026 12:40,No
+cyber-aware-2026q1,amara.silva2@example.com,Manufacturing,12/01/2026 08:30,No,1,1,13/01/2026 05:01,No
+cyber-aware-2026q1,cara.iyer2@example.com,Operations,12/01/2026 08:30,No,1,0,12/01/2026 12:50,No
+cyber-aware-2026q1,bruno.kowalski@example.com,Manufacturing,12/01/2026 08:30,No,1,0,12/01/2026 09:44,No
+cyber-aware-2026q1,uma.lopez@example.com,Sales,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,elena.muller@example.com,Operations,12/01/2026 08:30,No,2,0,12/01/2026 10:10,No
+cyber-aware-2026q1,cara.ueda@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,chloe.novak@example.com,Sales,12/01/2026 08:30,No,2,0,12/01/2026 10:10,No
+cyber-aware-2026q1,viktor.brown@example.com,Marketing,12/01/2026 08:30,No,1,0,13/01/2026 04:38,No
+cyber-aware-2026q1,ines.dubois@example.com,Marketing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,xenia.silva2@example.com,Operations,12/01/2026 08:30,No,1,0,12/01/2026 13:19,No
+cyber-aware-2026q1,viktor.hansen@example.com,Manufacturing,12/01/2026 08:30,No,2,0,12/01/2026 10:12,No
+cyber-aware-2026q1,tariq.evans@example.com,Legal,12/01/2026 08:30,Yes,0,0,,No
+cyber-aware-2026q1,kira.fischer@example.com,Legal,12/01/2026 08:30,No,1,0,13/01/2026 04:56,No
+cyber-aware-2026q1,hiro.ahmed@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,rosa.dubois@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,liam.chen@example.com,HR,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,amara.rossi@example.com,Sales,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,wei.tanaka@example.com,Manufacturing,12/01/2026 08:30,No,2,0,12/01/2026 09:34,No
+cyber-aware-2026q1,chloe.lopez@example.com,Technology,12/01/2026 08:30,No,1,1,12/01/2026 12:48,No
+cyber-aware-2026q1,cara.yilmaz@example.com,HR,12/01/2026 08:30,No,1,2,12/01/2026 09:54,No
+cyber-aware-2026q1,uma.zhang@example.com,Technology,12/01/2026 08:30,No,1,0,12/01/2026 09:53,No
+cyber-aware-2026q1,liam.tanaka@example.com,Technology,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,rosa.iyer@example.com,Sales,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,chloe.kowalski@example.com,Marketing,12/01/2026 08:30,Yes,0,0,,No
+cyber-aware-2026q1,chloe.walsh@example.com,Legal,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,cara.rossi@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,rosa.kowalski@example.com,Sales,12/01/2026 08:30,No,2,0,14/01/2026 12:54,No
+cyber-aware-2026q1,maya.fischer2@example.com,Operations,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,hiro.chen@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,dmitri.evans@example.com,Manufacturing,12/01/2026 08:30,No,3,0,13/01/2026 05:29,No
+cyber-aware-2026q1,ben.okafor@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,wei.jensen@example.com,Marketing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,priya.jensen@example.com,Technology,12/01/2026 08:30,No,1,1,13/01/2026 04:39,No
+cyber-aware-2026q1,rosa.okafor2@example.com,Legal,12/01/2026 08:30,No,1,0,12/01/2026 10:09,No
+cyber-aware-2026q1,ben.silva2@example.com,Marketing,12/01/2026 08:30,No,1,0,12/01/2026 13:23,No
+cyber-aware-2026q1,ines.fischer@example.com,Finance,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,priya.fischer@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,rosa.ueda@example.com,Operations,12/01/2026 08:30,No,1,0,12/01/2026 13:02,No
+cyber-aware-2026q1,viktor.walsh@example.com,Technology,12/01/2026 08:30,No,1,0,12/01/2026 10:01,No
+cyber-aware-2026q1,olu.jensen2@example.com,Finance,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,cara.muller@example.com,Manufacturing,12/01/2026 08:30,No,1,0,12/01/2026 09:57,No
+cyber-aware-2026q1,bruno.fischer@example.com,Technology,12/01/2026 08:30,No,1,1,12/01/2026 09:52,No
+cyber-aware-2026q1,grace.kowalski@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,hiro.novak2@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No
+cyber-aware-2026q1,xenia.iyer@example.com,Manufacturing,12/01/2026 08:30,No,0,0,,No

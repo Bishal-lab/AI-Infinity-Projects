@@ -1,0 +1,21 @@
+# Company data must never be committed. Only data/samples/ is tracked.
+data/inbox/*
+data/archive/*
+data/rejected/*
+data/warehouse/*
+data/exports/*
+!data/**/.gitkeep
+
+# The pseudonymisation salt is a secret: losing it breaks joins, leaking it
+# makes the hashed identifiers reversible.
+config/secret_salt
+
+wheelhouse/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.DS_Store
