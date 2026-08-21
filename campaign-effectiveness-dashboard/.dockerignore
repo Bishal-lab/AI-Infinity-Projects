@@ -1,0 +1,37 @@
+# Build context exclusions.
+#
+# The Dockerfile does `COPY config/ ./config/`, which without this file would
+# bake `config/secret_salt` into the image. The image is built on a connected
+# machine and shipped to the air-gapped host as a `docker save` tarball, so the
+# salt would travel with it — and leaking the salt makes every hashed
+# identifier reversible by anyone who knows the organisation's email
+# convention. Both README.md and comms_dashboard/config.py state that the salt
+# is held outside the image; this is what makes that true.
+#
+# The salt is generated on first run inside the container, into the bind-mounted
+# config/ directory, so excluding it here costs nothing operationally.
+config/secret_salt
+
+# Company data. data/samples/ is deliberately not excluded — the Dockerfile
+# copies it so a fresh install has something to demonstrate with — but every
+# directory that holds real exports is.
+data/inbox/
+data/archive/
+data/rejected/
+data/warehouse/
+data/exports/
+
+# Not needed in the image, and large.
+.git/
+.github/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+tests/
+docs/
+profiles/
+.DS_Store

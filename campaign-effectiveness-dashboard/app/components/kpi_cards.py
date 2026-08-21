@@ -11,6 +11,8 @@ green is precisely the case where colour-vision deficiency loses the message.
 
 from __future__ import annotations
 
+import html
+
 import streamlit as st
 
 from comms_dashboard.metrics.rag import RAG_LABEL, RAG_SYMBOL
@@ -50,6 +52,17 @@ def kpi_card(
     elif kpi.suppressed:
         detail = "group too small to report"
 
+    # The tile is raw HTML, so anything interpolated into it is markup. Today
+    # every value here traces back to a developer-controlled constant, which is
+    # the only reason this has not been a stored-XSS bug: campaign names *do*
+    # come from uploaded CSVs, and the first tile ever labelled with one would
+    # put file content straight into the DOM. Escaping now costs a line and
+    # removes the trap rather than leaving it for whoever adds that tile.
+    label = html.escape(str(kpi.label))
+    value = html.escape(str(value))
+    detail = html.escape(str(detail))
+    rag_label = html.escape(str(RAG_LABEL.get(rag, "")))
+
     st.markdown(
         f"""
         <div style="
@@ -61,7 +74,7 @@ def kpi_card(
         ">
           <div style="font-size:12px;color:{chrome['muted']};
                       text-transform:uppercase;letter-spacing:.04em;">
-            {kpi.label}
+            {label}
           </div>
           <div style="font-size:30px;line-height:1.15;margin:6px 0 2px;
                       color:{chrome['text_primary']};font-weight:600;">
@@ -72,7 +85,7 @@ def kpi_card(
           </div>
           <div style="font-size:12px;margin-top:8px;color:{colour};font-weight:600;">
             <span style="font-size:14px;">{symbol}</span>
-            {RAG_LABEL.get(rag, '')}
+            {rag_label}
           </div>
         </div>
         """,

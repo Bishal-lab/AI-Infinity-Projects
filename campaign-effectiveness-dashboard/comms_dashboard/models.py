@@ -15,6 +15,7 @@ never be a numerator over an audience size.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -113,6 +114,60 @@ class KpiValue:
         return f"{self.value:,.{decimals}f}"
 
 
+_EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+
+#: A run of digits and the separators phone numbers are written with. Whether it
+#: is actually redacted depends on the digit count, checked in ``_redact_number``
+#: — the pattern alone cannot tell ``+44 7724 829869`` from ``550 5.1.1``.
+_NUMBER_RE = re.compile(r"\+?\d[\d\s().-]*\d")
+
+#: Digits required before a run is treated as a phone number. Nine is the
+#: shortest national significant number in general use, and sits above the eight
+#: digits of a compact ISO date — so ``2026-01-05`` and an SMTP ``550 5.1.1``
+#: stay legible while every international phone number is caught. A short
+#: employee number will pass through: emails and phone numbers are the shapes
+#: these exports actually carry, and over-redacting costs the operator the
+#: diagnostic the message exists to give them.
+_PHONE_MIN_DIGITS = 9
+
+#: Example values are a diagnostic, not a data extract. Anything longer is
+#: truncated: a whole SMTP transcript in the issue log helps nobody.
+_EXAMPLE_MAX_CHARS = 120
+
+
+def redact_example(value: str) -> str:
+    """Strip identifier-shaped substrings out of a value bound for the issue log.
+
+    Failed values are quoted back to the operator so they can see *what* the
+    export contained, and they are persisted twice — to
+    ``load_issue.example_values`` and inside the report JSON on ``load_batch``.
+    That makes them a route for raw personal data into a warehouse the rest of
+    the pipeline is careful to keep hashed. It takes no malice: an ESP that
+    writes ``550 5.1.1 <ada@acme.com>: mailbox unavailable`` into its
+    delivery-status column puts a real address there, and the rows that fail are
+    precisely the ones a bounce report is about — so the leaked set is not even
+    random.
+
+    The *shape* survives, which is what makes the message useful in the first
+    place: the operator still sees that the column held an SMTP diagnostic
+    rather than ``delivered``, with the column name and failure count alongside.
+    """
+    # Emails first: the local part of an address is digit-bearing often enough
+    # that the number pass would otherwise chew a hole in the middle of one.
+    value = _EMAIL_RE.sub("<email>", value)
+    value = _NUMBER_RE.sub(_redact_number, value)
+    if len(value) > _EXAMPLE_MAX_CHARS:
+        value = value[:_EXAMPLE_MAX_CHARS] + "…"
+    return value
+
+
+def _redact_number(match: re.Match[str]) -> str:
+    """Replace a digit run only if it is long enough to be a phone number."""
+    text = match.group(0)
+    digits = sum(character.isdigit() for character in text)
+    return "<number>" if digits >= _PHONE_MIN_DIGITS else text
+
+
 @dataclass
 class LoadIssue:
     """One problem found while reading a file, surfaced on the admin page."""
@@ -123,6 +178,14 @@ class LoadIssue:
     column_name: str | None = None
     example_values: tuple[str, ...] = ()
     occurrence_count: int = 0
+
+    def __post_init__(self) -> None:
+        # Redact here rather than at each call site: every issue in the codebase
+        # is built through this class, so one gate covers the coercion failures,
+        # the unknown-column lists and anything added later.
+        self.example_values = tuple(
+            redact_example(str(v)) for v in self.example_values
+        )
 
 
 @dataclass
