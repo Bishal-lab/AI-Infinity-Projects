@@ -4,9 +4,18 @@ Every breakdown here can single out a small group of named colleagues, so
 suppression is applied inside the query layer rather than left to the UI to
 remember.
 
-Two rules:
+Three rules:
 
-* Any cell whose population is below ``privacy.min_group_size`` is suppressed.
+* Any group whose population is below ``privacy.min_group_size`` is suppressed.
+* Any group with a **measure** between 1 and ``min_group_size - 1`` is
+  suppressed too, however large the group is. Checking only the population
+  protects "Legal has 3 people" while still publishing "1 of the 40 people in
+  Legal completed the anti-bribery module" — which names an individual just as
+  effectively, and is the more common shape in practice, because a low
+  completion count in a large team is exactly what a management pack goes
+  looking for. A count of zero is not disclosive and stays visible: "nobody in
+  Legal completed it" identifies no one, and suppressing it would hide the
+  finding the report exists to surface.
 * If exactly one sub-group within a parent is suppressed, the next-smallest is
   suppressed too — otherwise the hidden value is trivially recoverable by
   subtracting the visible ones from the total.
@@ -91,6 +100,13 @@ def coverage_by_segment(
     return apply_suppression(frame, settings, population_column="headcount")
 
 
+#: Measures counted in people. A small non-zero value in any of these singles
+#: out individuals regardless of how big the surrounding group is, so each is
+#: tested against the threshold in its own right. Rates are excluded: they are
+#: derived from these counts and are suppressed alongside them.
+PERSON_COUNT_COLUMNS = ("targeted", "reached", "engaged", "completed", "never_reached")
+
+
 def apply_suppression(
     frame: pd.DataFrame,
     settings: Settings,
@@ -107,7 +123,17 @@ def apply_suppression(
 
     minimum = settings.min_group_size
     frame = frame.copy()
-    frame["suppressed"] = frame[population_column] < minimum
+    suppressed = frame[population_column] < minimum
+
+    # A large group with a tiny measure is the case that checking only the
+    # population misses. 0 stays visible on purpose — see the module docstring.
+    for column in PERSON_COUNT_COLUMNS:
+        if column not in frame.columns:
+            continue
+        values = pd.to_numeric(frame[column], errors="coerce")
+        suppressed |= values.between(1, minimum - 1, inclusive="both").fillna(False)
+
+    frame["suppressed"] = suppressed
 
     if settings.complementary_suppression and frame["suppressed"].sum() == 1:
         # Exactly one hidden group is not hidden at all: subtract the visible
@@ -161,7 +187,11 @@ def channel_mix_by_segment(
     if frame.empty:
         return frame
     frame["reach_rate"] = frame["reached"] / frame["targeted"].replace(0, pd.NA)
-    small = frame["targeted"] < settings.min_group_size
+    # Same rule as apply_suppression: a large denominator does not make a
+    # numerator of 1 safe to publish.
+    minimum = settings.min_group_size
+    small = frame["targeted"] < minimum
+    small |= frame["reached"].between(1, minimum - 1, inclusive="both")
     frame.loc[small, ["targeted", "reached", "reach_rate"]] = pd.NA
     frame["suppressed"] = small
     return frame

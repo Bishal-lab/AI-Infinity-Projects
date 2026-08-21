@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import os
 import secrets
+import stat
+import warnings
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -185,6 +187,12 @@ class Settings:
         Kept in a file outside git and outside the container image. Losing it
         breaks every existing join, so the file is created once and never
         rotated automatically.
+
+        Permissions are enforced on every read, not only at creation. The
+        documented backup procedure — copy the file away, restore it later — is
+        the realistic way a salt ends up world-readable, and a salt created
+        correctly two years ago says nothing about the mode of the copy sitting
+        there now.
         """
         salt_path = self.raw.get("privacy", {}).get("salt_file", "config/secret_salt")
         p = Path(salt_path)
@@ -192,12 +200,48 @@ class Settings:
             p = self.root / p
         if not p.exists():
             p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_text(secrets.token_hex(32), encoding="utf-8")
+            # Created through os.open with the mode set up front: write_text()
+            # followed by chmod leaves the salt readable at the process umask
+            # for the window in between, and O_EXCL means two processes racing
+            # to first use cannot each generate one and then disagree.
             try:
-                os.chmod(p, 0o600)
-            except OSError:  # pragma: no cover - platform dependent
+                fd = os.open(p, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            except FileExistsError:  # another process won the race; use theirs
                 pass
+            else:
+                with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                    handle.write(secrets.token_hex(32))
+        _enforce_salt_permissions(p)
         return p.read_text(encoding="utf-8").strip().encode("utf-8")
+
+
+def _enforce_salt_permissions(path: Path) -> None:
+    """Narrow the salt to owner-only, and say so out loud if that is impossible.
+
+    Silence was the real problem with the previous ``except OSError: pass``: on
+    a filesystem that cannot represent POSIX modes — a Windows share, an SMB
+    mount, some container volume drivers — the salt stays world-readable and
+    nothing tells the operator, who has every reason to believe the README's
+    claim that it is protected.
+    """
+    try:
+        mode = stat.S_IMODE(path.stat().st_mode)
+    except OSError:  # pragma: no cover - the read below reports it properly
+        return
+    if not mode & 0o077:
+        return
+    try:
+        os.chmod(path, 0o600)
+    except OSError:
+        warnings.warn(
+            f"Could not restrict permissions on the pseudonymisation salt "
+            f"{path} (mode {mode:04o}). Anyone who can read this file can "
+            f"reverse every hashed identifier in the warehouse. Move it to a "
+            f"filesystem that supports POSIX permissions, or set "
+            f"privacy.salt_file to a path that does.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
 
 
 def load_settings(path: Path | None = None) -> Settings:

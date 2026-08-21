@@ -37,6 +37,17 @@ COPY config/ ./config/
 COPY .streamlit/ ./.streamlit/
 COPY data/samples/ ./data/samples/
 
+# The pseudonymisation salt must never travel inside the image: it is shipped to
+# the air-gapped host as a `docker save` tarball, and leaking the salt makes
+# every hashed identifier reversible. .dockerignore already keeps it out of the
+# build context; this fails the build loudly if it ever gets in anyway — through
+# a context assembled by hand, an older .dockerignore, or a build tool that does
+# not honour it.
+RUN test ! -e config/secret_salt \
+    || (echo "BUILD REFUSED: config/secret_salt is in the build context." \
+     && echo "Check .dockerignore — the salt belongs on the host, not in the image." \
+     && exit 1)
+
 # Run unprivileged. The data directory is a mount point, so it must be writable
 # by this user — see the note in docker-compose.yml about matching ownership.
 RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin appuser \

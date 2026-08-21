@@ -11,7 +11,7 @@ questions well, because everything else depends on them:
 from __future__ import annotations
 
 import shutil
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 import pandas as pd
 import streamlit as st
@@ -28,6 +28,48 @@ from comms_dashboard.ingest.loader import (
 from comms_dashboard.ingest.reader import file_sha256, is_supported, read_file
 from comms_dashboard.ingest.registry import build_adapters, detect_source
 from comms_dashboard.models import LoadReport
+
+#: Extensions the inbox will accept. The ``type=`` argument to
+#: ``st.file_uploader`` only filters the browser's file picker — Streamlit does
+#: not enforce it server-side — so the check has to happen here too.
+UPLOAD_EXTENSIONS = {".csv", ".tsv", ".txt", ".xlsx", ".xlsm", ".xls"}
+
+
+def safe_inbox_target(inbox: Path, uploaded_name: str) -> Path:
+    """Resolve an uploaded file's name to a path *inside* the inbox.
+
+    ``UploadedFile.name`` is the filename from the browser's multipart request.
+    Tornado passes the ``Content-Disposition`` filename through verbatim and
+    Streamlit stores it unmodified, so it is attacker-controlled: joining it
+    onto the inbox directly lets ``../../config/secret_salt`` — or an absolute
+    path, which replaces the base entirely — write anywhere the app's user can.
+
+    Both separators are stripped, not just the platform's: a Linux host must
+    still reject ``..\\..\\evil.csv``, because the name comes from whatever
+    machine the browser is running on.
+
+    Raises ``ValueError`` if nothing usable survives, so the caller reports the
+    file as rejected rather than silently writing somewhere unexpected.
+    """
+    # Take the last segment under both POSIX and Windows rules, so neither
+    # separator can survive into the joined path.
+    name = PureWindowsPath(PurePosixPath(uploaded_name).name).name
+    if not name or name in {".", ".."} or name.startswith("."):
+        raise ValueError(f"unusable filename: {uploaded_name!r}")
+    if Path(name).suffix.lower() not in UPLOAD_EXTENSIONS:
+        raise ValueError(
+            f"{name!r} is not a supported export "
+            f"({', '.join(sorted(UPLOAD_EXTENSIONS))})"
+        )
+
+    target = inbox / name
+    # Belt and braces: prove the result really is under the inbox before any
+    # write. Catches anything the name-stripping above failed to anticipate.
+    try:
+        target.resolve().relative_to(inbox.resolve())
+    except ValueError as exc:  # pragma: no cover - unreachable via the checks above
+        raise ValueError(f"{uploaded_name!r} resolves outside the inbox") from exc
+    return target
 
 @st.cache_data(show_spinner=False)
 def _probe(path_str: str, mtime: float, size: int) -> dict:
@@ -102,10 +144,21 @@ def _inbox_tab(settings, inbox: Path) -> None:
             accept_multiple_files=True,
         )
         if uploaded:
+            written, refused = 0, []
             for item in uploaded:
-                (inbox / item.name).write_bytes(item.getbuffer())
-            st.success(f"Copied {len(uploaded)} file(s) into the inbox.")
-            st.rerun()
+                try:
+                    target = safe_inbox_target(inbox, item.name)
+                except ValueError as exc:
+                    refused.append(str(exc))
+                    continue
+                target.write_bytes(item.getbuffer())
+                written += 1
+            if written:
+                st.success(f"Copied {written} file(s) into the inbox.")
+            for reason in refused:
+                st.error(f"Refused: {reason}")
+            if written:
+                st.rerun()
     with right:
         st.write("")
         if st.button("Copy sample exports into the inbox"):

@@ -21,6 +21,8 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
+from ..models import redact_example
+
 DEFAULT_TRUE = {
     "true", "t", "yes", "y", "1", "1.0", "on", "success", "ok", "✓", "x",
     "delivered", "opened", "read", "clicked", "attended", "registered",
@@ -74,10 +76,18 @@ def _is_blank(value: object) -> bool:
 
 
 def _collect(failed: list[str], limit: int = 3) -> tuple[str, ...]:
+    """Up to ``limit`` distinct failed values, redacted for the issue log.
+
+    ``LoadIssue`` redacts on construction too — this is not belt and braces but
+    ordering: de-duplicating *after* redaction means two different addresses in
+    the same column collapse to one ``<email>`` example, instead of spending the
+    whole quota proving the same point three times.
+    """
     seen: list[str] = []
     for value in failed:
-        if value not in seen:
-            seen.append(value)
+        cleaned = redact_example(value)
+        if cleaned not in seen:
+            seen.append(cleaned)
         if len(seen) >= limit:
             break
     return tuple(seen)
