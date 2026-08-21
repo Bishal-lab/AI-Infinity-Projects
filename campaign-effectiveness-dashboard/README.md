@@ -277,10 +277,16 @@ This dashboard processes employee-level engagement data. Read this section befor
   buys: someone who knows your email convention can hash a name list and match it. The stored data
   remains personal data under GDPR/DPDP and comparable regimes. It reduces casual exposure; it does
   not discharge your obligations.
-- **Aggregate-only display.** Breakdowns below `privacy.min_group_size` (default 5 — raise it to 10
-  for grade or manager cuts) are suppressed. **Complementary suppression** hides a second group when
-  only one would otherwise be hidden, because a single hidden value is recoverable by subtracting
-  the visible ones from the total. There is no individual drill-down.
+- **Aggregate-only display.** Three rules, all in `metrics/coverage.py`. A group whose *population*
+  is below `privacy.min_group_size` (default 5 — raise it to 10 for grade or manager cuts) is
+  suppressed. So is a group whose *measure* falls between 1 and the threshold, however large the
+  group: "1 of the 40 people in Legal completed it" names an individual as effectively as a
+  three-person department does, and it is the more common shape, because a low count in a big team
+  is exactly what a management pack goes looking for. A count of **zero** stays visible — it
+  identifies nobody, and hiding it would bury the finding the report exists to surface. Finally,
+  **complementary suppression** hides a second group when only one would otherwise be hidden, since
+  a single hidden value is recoverable by subtracting the visible ones from the total. There is no
+  individual drill-down.
 - **Streamlit has no authentication.** Anyone who can reach port 8501 sees every campaign. The
   default binding is `127.0.0.1`. Put it behind your internal reverse proxy with SSO before sharing
   it beyond the comms team.
@@ -290,6 +296,20 @@ This dashboard processes employee-level engagement data. Read this section befor
 - **Get employee-relations sign-off.** Measuring individual employees' engagement with internal
   communications is consultable or restricted in several jurisdictions — EU works councils in
   particular. The dashboard supports aggregate-only operation, but the policy call is yours.
+
+### Known dependency advisories
+
+`pip-audit` against the pinned `requirements.txt` reports the following. None is fixed here, because
+each needs a version bump that wants testing on its own; they are listed so the decision is yours
+rather than invisible. Re-run `pip-audit -r requirements.txt` before go-live — this list is a
+snapshot, not a standing guarantee.
+
+| Package | Advisory | Reachable here? |
+|---|---|---|
+| streamlit 1.41.1 | CVE-2026-33682 — unauthenticated SSRF via UNC paths, **Windows hosts only** (fixed 1.54.0) | **Yes, on Windows.** `run.bat` and the Task Scheduler instructions make Windows a supported target, and this is the one advisory here that would break the "nothing leaves the machine" guarantee. Prefer a Linux host, or upgrade and re-test. |
+| streamlit 1.41.1 | CVE-2026-10804 — weak hash in the caching layer (fixed 1.53.1) | Low. Needs local access and is hard to exploit. |
+| pyarrow 18.1.0 | CVE-2026-25087 — use-after-free reading Arrow IPC **files** with pre-buffering (fixed 23.0.1) | No. The app reads CSV and Excel; it never opens an Arrow IPC file. |
+| pillow 11.3.0 (transitive, via streamlit) | ~25 image-decoder advisories | No. The app decodes no user-supplied images. Still ships in the container image. |
 
 ## Honest limitations
 

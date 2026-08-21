@@ -94,6 +94,18 @@ The warehouse is a single file. Stop the app (or use a read-only connection) and
 `data/warehouse/comms.duckdb`. Back up `config/secret_salt` **separately and securely**: losing it
 breaks every existing identity join, and leaking it makes the hashed identifiers reversible.
 
+Copy the salt in a way that preserves its mode (`cp -p`, `install -m 600`, `tar -p`) and check it
+after restoring — a plain `cp` gives the copy your umask, typically `0644`:
+
+```bash
+install -m 600 config/secret_salt /secure/backup/secret_salt
+ls -l config/secret_salt          # expect -rw-------
+```
+
+The app narrows the file to `0600` on every read and warns if it cannot, so a restored copy is
+corrected on the next start rather than silently left readable. It never rewrites the *contents*:
+a changed salt would break every identity join already in the warehouse.
+
 ## Upgrading
 
 `config/` and `data/` are the only stateful directories, and both are bind-mounted under Docker.
