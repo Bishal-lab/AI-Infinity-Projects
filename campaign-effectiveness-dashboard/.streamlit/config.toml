@@ -1,0 +1,22 @@
+[browser]
+# Streamlit posts anonymous usage statistics to an external endpoint by default.
+# On-prem deployments must have this off — it is the only outbound call the app
+# would otherwise make at runtime.
+gatherUsageStats = false
+
+[server]
+headless = true
+port = 8501
+# Bind to loopback by default. Change to 0.0.0.0 only when the app sits behind
+# an internal reverse proxy that terminates authentication (see README security).
+address = "127.0.0.1"
+enableCORS = true
+enableXsrfProtection = true
+maxUploadSize = 500
+
+[global]
+developmentMode = false
+
+[theme]
+base = "light"
+primaryColor = "#3B6FE0"

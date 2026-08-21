@@ -1,0 +1,119 @@
+# Viva Engage (formerly Yammer) community analytics.
+#
+# This is the one AGGREGATE-ONLY source: Viva reports per post or per day, never
+# per person. Two consequences run through the whole dashboard and start here:
+#
+# * These rows can never contribute to person-level coverage or cross-channel
+#   deduplication, because there are no people in them.
+# * ENGAGED is a count of *interactions*, not of people: one person can react,
+#   comment and share the same post. It is emitted with measure_unit='events'
+#   so no rate can ever divide it by an audience size.
+#
+# Two export shapes are supported by the same mapping:
+#   per post  — Post ID / Audience Size / Unique Viewers / Reactions / ...
+#   per day   — Date / People reached / views / reactions / messages / Q&A
+# The daily community export carries NO community-size column, so Targeted comes
+# out as "not measured" and there is no reach *rate* to report — only reach.
+
+source: viva_engage
+mapping_version: "1.1"
+display_name: Viva Engage community analytics
+grain: aggregate
+
+detect:
+  priority: 10
+  filename_glob: ["*viva*", "*engage*", "*yammer*", "*community*"]
+  header_fingerprint:
+    strong: ["Post Title", "Community", "Unique Viewers",
+             "People reached", "Members and admins views on posts"]
+    weak: ["Reactions", "Comments", "Shares", "Impressions", "Audience Size",
+           "Post ID", "Members reached", "Total answers", "Total questions",
+           "Non-members views on posts"]
+    exclude: ["Recipient Email", "Attendance Duration", "Course Name",
+              "Course/Training Name"]
+  min_score: 4
+
+read:
+  sheet: 0
+  header_row: 1
+  encoding: auto
+  delimiter: auto
+  na_values: ["", "-", "N/A", "NULL", "#N/A"]
+
+keys:
+  campaign:
+    aliases: ["Campaign ID", "Campaign", "Community"]
+    fallback_from_filename: 'viva_engage_(?P<campaign>[A-Za-z0-9._-]+?)_\d{4}-\d{2}'
+    required: true
+  post:
+    aliases: ["Post ID", "Post Title", "Message ID"]
+    required: false
+
+fields:
+  period_start:
+    aliases: ["Published On", "Post Date", "Date"]
+    type: date
+    required: true
+  # Optional: the daily community export has no community-size column at all.
+  # Without it there is no denominator, so Targeted reports "not measured"
+  # rather than borrowing another number and calling it an audience.
+  audience_size:
+    aliases: ["Audience Size", "Community Members", "Members"]
+    type: number
+    required: false
+  unique_viewers:
+    aliases: ["Unique Viewers", "Unique Views", "Reach", "People reached"]
+    type: number
+    required: false
+  members_reached:
+    aliases: ["Members reached"]
+    type: number
+    required: false
+  impressions:
+    aliases: ["Impressions", "Views", "Members and admins views on posts"]
+    type: number
+    required: false
+  impressions_nonmembers:
+    aliases: ["Non-members views on posts"]
+    type: number
+    required: false
+  reactions:
+    aliases: ["Reactions", "Likes", "Members and admins reactions on messages"]
+    type: number
+    required: false
+  reactions_nonmembers:
+    aliases: ["Non-members reactions on messages"]
+    type: number
+    required: false
+  comments:
+    aliases: ["Comments", "Replies", "Members and admins messages posted"]
+    type: number
+    required: false
+  comments_nonmembers:
+    aliases: ["Non-members messages posted"]
+    type: number
+    required: false
+  shares:
+    aliases: ["Shares", "Reshares"]
+    type: number
+    required: false
+  answers:
+    aliases: ["Total answers"]
+    type: number
+    required: false
+  questions:
+    aliases: ["Total questions"]
+    type: number
+    required: false
+
+# Stage aggregation, done in comms_dashboard/ingest/adapters/viva_engage.py:
+#   TARGETED = audience_size                              (persons, max)
+#   OPENED   = unique_viewers / People reached            (persons, max)
+#   ENGAGED  = reactions + comments + shares + Q&A, both  (EVENTS,  sum)
+#              member and non-member columns summed
+# TARGETED and OPENED use max, not sum: the same community repeated on every
+# post — or the same people reached on consecutive days — must not be added up.
+
+on_unknown_columns: warn
+on_missing_optional: warn
+on_missing_required: reject_file

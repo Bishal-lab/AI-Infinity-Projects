@@ -1,0 +1,81 @@
+# Email campaign export.
+#
+# TO ADAPT THIS TO YOUR OWN EXPORT: add your real column headers to the
+# `aliases` lists below. Matching ignores case, spaces, underscores and
+# punctuation, so "Unique Opens", "unique_opens" and "UNIQUE OPENS " all match
+# the same alias. You should not need to touch any Python.
+
+source: email
+mapping_version: "1.0"
+display_name: Email campaign export
+grain: recipient
+
+detect:
+  priority: 10
+  filename_glob: ["*email*", "*mailer*", "*outlook*"]
+  header_fingerprint:
+    strong: ["Recipient Email", "Delivery Status", "Unique Opens"]
+    weak: ["Campaign Name", "Send Time", "Bounced", "Unique Clicks", "Unsubscribed"]
+    exclude: ["Attendance Duration", "Course Name", "Post Title", "Message Template"]
+  min_score: 4
+
+read:
+  sheet: 0
+  header_row: 1
+  encoding: auto
+  delimiter: auto
+  na_values: ["", "-", "N/A", "NULL", "#N/A", "n/a"]
+
+keys:
+  campaign:
+    aliases: ["Campaign ID", "Campaign Name", "Campaign"]
+    fallback_from_filename: 'email_(?P<campaign>[A-Za-z0-9._-]+?)_\d{4}-\d{2}'
+    required: true
+  recipient:
+    aliases: ["Recipient Email", "Email Address", "Email", "To"]
+    id_type: email
+    canonicalise: [strip, lower]
+    required: true
+
+fields:
+  targeted:
+    const: true
+    type: bool
+  delivered:
+    aliases: ["Delivery Status", "Delivered"]
+    type: bool
+    required: true
+    true_values: ["delivered", "success", "sent", "yes", "true", "1"]
+    false_values: ["bounced", "failed", "blocked", "dropped", "no", "false", "0"]
+  bounced:
+    aliases: ["Bounced", "Bounce Type", "Bounce"]
+    type: bool
+    required: false
+  opened:
+    aliases: ["Unique Opens", "Opened", "Open Count", "Opens"]
+    type: bool_from_count
+    required: false
+  engaged:
+    aliases: ["Unique Clicks", "Clicked", "Click Count", "Clicks"]
+    type: bool_from_count
+    required: false
+  opted_out:
+    aliases: ["Unsubscribed", "Opt Out", "Opted Out"]
+    type: bool
+    required: false
+  targeted_at:
+    aliases: ["Send Time", "Sent Date", "Send Date", "Sent"]
+    type: datetime
+    required: false
+  opened_at:
+    aliases: ["First Open", "Open Time", "First Opened"]
+    type: datetime
+    required: false
+  department:
+    aliases: ["Department", "Dept"]
+    type: string
+    required: false
+
+on_unknown_columns: warn
+on_missing_optional: warn
+on_missing_required: reject_file

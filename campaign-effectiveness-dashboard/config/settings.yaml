@@ -1,0 +1,74 @@
+# ---------------------------------------------------------------------------
+# Deployment settings. Edit this file to fit your organisation — nothing here
+# needs a code change.
+# ---------------------------------------------------------------------------
+
+app:
+  title: Internal Communications Effectiveness
+  org_name: Your Organisation
+  # Total in-scope workforce, used as the coverage denominator when no employee
+  # roster has been loaded. Leave null to derive it from the roster.
+  headcount: 1200
+
+paths:
+  inbox: data/inbox
+  archive: data/archive
+  rejected: data/rejected
+  samples: data/samples
+  exports: data/exports
+  warehouse: data/warehouse/comms.duckdb
+
+parsing:
+  # NEVER inferred. 03/04/2026 is ambiguous and guessing it is the most common
+  # silent data corruption in a tool like this. Set it to match your exports.
+  date_order: DMY          # DMY | MDY | ISO
+  default_country_code: "+44"
+  period_grain: month      # day | week | month
+
+taxonomy:
+  departments: [Finance, Operations, Technology, HR, Sales, Legal, Manufacturing, Marketing]
+  regions: [EMEA, AMER, APAC, LATAM]
+  grade_bands: [Band 1, Band 2, Band 3, Band 4, Exec]
+  # Fold the spellings your source systems actually use into the list above.
+  department_aliases:
+    Fin: Finance
+    IT: Technology
+    Tech: Technology
+    People & Culture: HR
+    Ops: Operations
+
+rules:
+  # A Teams attendee counts as COMPLETED at or above this share of the
+  # scheduled session length.
+  webinar_completion_fraction: 0.50
+  # Denominator for the open/view rate: 'delivered' (a delivery failure should
+  # not be scored as disinterest) or 'targeted'.
+  open_rate_basis: delivered
+  # Cross-channel deduplication is offered only when at least this share of
+  # recipients resolved to an employee, on at least two channels.
+  dedupe_min_resolution: 0.80
+
+# RAG thresholds. green at or above target; amber at or above
+# target * amber_factor; red below that.
+thresholds:
+  delivery_rate:   {target: 0.98, amber_factor: 0.98}
+  open_rate:       {target: 0.60, amber_factor: 0.85}
+  engagement_rate: {target: 0.30, amber_factor: 0.80}
+  completion_rate: {target: 0.90, amber_factor: 0.85}
+  attendance_rate: {target: 0.60, amber_factor: 0.80}
+  coverage_rate:   {target: 0.95, amber_factor: 0.95}
+
+privacy:
+  # Replace recipient identifiers with a keyed hash at ingest, so the warehouse
+  # holds no direct identifiers. See the README security section for why this
+  # is pseudonymisation, not anonymisation.
+  hash_identifiers: true
+  salt_file: config/secret_salt
+  # Suppress any breakdown cell whose denominator is below this. Raise it to 10
+  # for grade-band or people-manager cuts.
+  min_group_size: 5
+  # If exactly one sub-group in a parent is suppressed, suppress the
+  # next-smallest too — otherwise the hidden value is recoverable by subtraction.
+  complementary_suppression: true
+  allow_individual_drilldown: false
+  retention_months: 24

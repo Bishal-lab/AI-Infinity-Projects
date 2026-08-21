@@ -1,0 +1,215 @@
+# ---------------------------------------------------------------------------
+# The canonical funnel, and how each platform's own vocabulary maps onto it.
+#
+# This file is the single source of truth for the stage-support matrix. It is
+# materialised into dim_channel_stage_support at startup, and both the SQL and
+# the UI read it from there — so changing a mapping here changes every number
+# and every label in the dashboard, with no code edit.
+#
+# status is THREE-valued, and the distinction is the most important idea in
+# this project:
+#
+#   measured        the platform reports it and we mapped it
+#   not_applicable  the platform has no such concept at all
+#                   (renders "n/a" — never 0, and excluded from rate maths)
+#   not_measured    the platform *could* report it but this export did not
+#                   (set at load time, per campaign — see ingest/loader.py)
+#
+# unit is TWO-valued:
+#   persons  distinct people. Only these take part in funnel arithmetic.
+#   events   interactions, which can exceed the audience size. Displayed, but
+#            never divided by a person count.
+# ---------------------------------------------------------------------------
+
+stages:
+  - name: TARGETED
+    ordinal: 1
+    label: Targeted
+    description: >-
+      The campaign intended to reach this person. This is the workforce
+      coverage denominator.
+  - name: DELIVERED
+    ordinal: 2
+    label: Delivered
+    description: The message technically arrived at the person's endpoint.
+  - name: OPENED
+    ordinal: 3
+    label: Opened / Viewed
+    description: Passive consumption — the person saw, read, opened or registered.
+  - name: ENGAGED
+    ordinal: 4
+    label: Engaged
+    description: An active act — click, reply, reaction, attendance.
+  - name: COMPLETED
+    ordinal: 5
+    label: Completed
+    description: The campaign's own success criterion was met.
+
+channels:
+
+  email:
+    display_name: Email
+    grain: recipient
+    sort_order: 1
+    stages:
+      TARGETED:
+        status: measured
+        unit: persons
+        native_name: Sent
+      DELIVERED:
+        status: measured
+        unit: persons
+        native_name: Delivered (sent minus bounced)
+      OPENED:
+        status: measured
+        unit: persons
+        native_name: Unique opens
+        caveat: >-
+          Open tracking is structurally unreliable. Apple Mail Privacy
+          Protection pre-fetches tracking pixels (inflates opens) while
+          Outlook image blocking suppresses them (deflates opens). Treat
+          email open rate as directional only; lead with engagement.
+      ENGAGED:
+        status: measured
+        unit: persons
+        native_name: Unique clicks
+        caveat: >-
+          Corporate link scanners click every URL in an inbound mail, which
+          can inflate click counts on some gateways.
+      COMPLETED:
+        status: not_applicable
+        unit: persons
+        caveat: Email has no completion concept — nothing is finished by reading a mail.
+
+  whatsapp:
+    display_name: WhatsApp
+    grain: recipient
+    sort_order: 2
+    stages:
+      TARGETED:
+        status: measured
+        unit: persons
+        native_name: Sent
+      DELIVERED:
+        status: measured
+        unit: persons
+        native_name: Delivered
+      OPENED:
+        status: measured
+        unit: persons
+        native_name: Read
+        caveat: >-
+          Read receipts can be switched off by the recipient, which
+          understates reads. The gap is invisible in the export.
+      ENGAGED:
+        status: measured
+        unit: persons
+        native_name: Replied or tapped a button
+      COMPLETED:
+        status: not_applicable
+        unit: persons
+        caveat: A broadcast message has no completion criterion.
+
+  lms:
+    display_name: Learning Management
+    grain: recipient
+    sort_order: 3
+    stages:
+      TARGETED:
+        status: measured
+        unit: persons
+        native_name: Assigned
+      DELIVERED:
+        status: not_applicable
+        unit: persons
+        caveat: >-
+          Assignment in an LMS is instantaneous — there is no delivery step to
+          succeed or fail, so delivery rate is not meaningful for this channel.
+      OPENED:
+        status: measured
+        unit: persons
+        native_name: Started (first launch)
+      ENGAGED:
+        status: measured
+        unit: persons
+        native_name: Progressed or attempted the assessment
+      COMPLETED:
+        status: measured
+        unit: persons
+        native_name: Completed and passed
+
+  teams_webinar:
+    display_name: MS Teams webinar
+    grain: recipient
+    sort_order: 4
+    stages:
+      TARGETED:
+        status: measured
+        unit: persons
+        native_name: Invited
+      DELIVERED:
+        status: not_applicable
+        unit: persons
+        caveat: >-
+          A Teams attendance report carries no invitation-delivery telemetry.
+          Whether the invite arrived belongs to the email channel, so this is
+          deliberately n/a rather than a misleading 100%.
+      OPENED:
+        status: measured
+        unit: persons
+        native_name: Registered
+        caveat: >-
+          Registration is mapped to Opened because it is an act of intent
+          rather than passive consumption. Change this line if your
+          organisation reads it differently.
+      ENGAGED:
+        status: measured
+        unit: persons
+        native_name: Attended (joined the session)
+      COMPLETED:
+        status: measured
+        unit: persons
+        native_name: Attended to the completion threshold
+        caveat: >-
+          Derived: attendance_minutes / session_minutes >=
+          rules.webinar_completion_fraction in settings.yaml.
+
+  viva_engage:
+    display_name: Viva Engage
+    grain: aggregate
+    sort_order: 5
+    stages:
+      TARGETED:
+        status: measured
+        unit: persons
+        native_name: Community audience size
+        caveat: >-
+          The same community is repeated on every post, so this is taken as the
+          largest audience seen, not the sum across posts.
+      DELIVERED:
+        status: not_applicable
+        unit: persons
+        caveat: >-
+          A community post is published, not delivered to an endpoint. There is
+          no per-person delivery signal.
+      OPENED:
+        status: measured
+        unit: persons
+        native_name: Unique viewers
+        caveat: >-
+          Viewers are unique within a post, but post-level data cannot say
+          whether the same person saw two posts. This is therefore the best
+          single post's unique viewers — a LOWER BOUND on true reach, never the
+          sum, which would claim several times the workforce.
+      ENGAGED:
+        status: measured
+        unit: events
+        native_name: Reactions, comments and shares
+        caveat: >-
+          Counted in EVENTS, not people — one person can react and comment on
+          the same post. Excluded from person-based funnel arithmetic and never
+          divided by an audience size.
+      COMPLETED:
+        status: not_applicable
+        unit: persons
+        caveat: A community post has no completion criterion.

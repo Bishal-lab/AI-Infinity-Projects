@@ -1,0 +1,116 @@
+# Learning Management System enrolment / completion export
+# (SuccessFactors, Cornerstone, Docebo, Moodle and Workday Learning all export
+# a per-learner row with a status and a progress percentage).
+
+source: lms
+mapping_version: "1.1"
+display_name: Learning Management export
+grain: recipient
+
+detect:
+  priority: 10
+  filename_glob: ["*lms*", "*learning*", "*course*", "*training*"]
+  header_fingerprint:
+    strong: ["Course Name", "Completion Status", "Learner ID",
+             "Course/Training Name", "Node Status"]
+    weak: ["Progress %", "Score", "Enrolled On", "Completed On", "Assessment Passed",
+           "Due Date", "Login Code", "Node Event Name", "Aggregate Marks Obtained",
+           "Minimum Passing Marks", "Passed Status"]
+    exclude: ["Recipient Email", "Attendance Duration", "Post Title"]
+  min_score: 4
+
+read:
+  sheet: 0
+  header_row: 1
+  encoding: auto
+  delimiter: auto
+  na_values: ["", "-", "N/A", "NULL", "#N/A", "Not started"]
+  # This platform exports MM/DD/YYYY. Proven, not assumed: dates such as
+  # 07/31/2026 have a second part above 12, and a value like 08-06-2026 read as
+  # DMY would land ten days BEFORE the course was assigned. Overrides the
+  # global parsing.date_order for this source only.
+  date_order: MDY
+
+keys:
+  campaign:
+    aliases: ["Campaign ID", "Course Code", "Course/Training Name", "Course Name",
+              "Curriculum"]
+    fallback_from_filename: 'lms_(?P<campaign>[A-Za-z0-9._-]+?)_\d{4}-\d{2}'
+    required: true
+  recipient:
+    aliases: ["Learner ID", "Learner Email", "User ID", "Employee ID", "Login Code"]
+    id_type: lms_user_id
+    canonicalise: [strip, lower]
+    required: true
+
+fields:
+  targeted:
+    const: true
+    type: bool
+  opened:
+    aliases: ["Started", "Launched", "First Access"]
+    type: bool
+    required: false
+  # Some platforms report the start only as a last-access timestamp. The adapter
+  # derives Started from this when no explicit flag exists.
+  opened_at:
+    aliases: ["Last Access Date", "First Access Date", "Started On"]
+    type: datetime
+    required: false
+  completed:
+    aliases: ["Completion Status", "Node Status", "Completed", "Status"]
+    type: bool
+    required: true
+    true_values: ["completed", "complete", "passed", "yes", "true", "1",
+                  "completed and passed"]
+    false_values: ["in progress", "not started", "incomplete", "failed", "no",
+                   "false", "0", "registered", "submitted not finalized",
+                   "completed and failed"]
+  progress_pct:
+    aliases: ["Progress %", "Progress", "Percent Complete"]
+    type: percent
+    required: false
+  score:
+    aliases: ["Aggregate Marks Obtained", "Score", "Assessment Score", "Final Score"]
+    type: number
+    required: false
+  pass_mark:
+    aliases: ["Minimum Passing Marks", "Pass Mark", "Passing Score"]
+    type: number
+    required: false
+  assessment_passed:
+    aliases: ["Assessment Passed", "Passed Status", "Passed", "Pass/Fail"]
+    type: bool
+    required: false
+    true_values: ["pass", "passed", "yes", "true", "1"]
+    false_values: ["fail", "failed", "no", "false", "0"]
+  attempts:
+    aliases: ["Attempts", "Attempt Count"]
+    type: number
+    required: false
+  targeted_at:
+    aliases: ["Assigned On", "Enrolled On", "Enrolment Date", "Assigned Date",
+              "Start Date"]
+    type: datetime
+    required: false
+  completed_at:
+    aliases: ["Completed On", "Completion Date"]
+    type: datetime
+    required: false
+  due_date:
+    aliases: ["Due Date", "Deadline", "End Date"]
+    type: date
+    required: false
+  # No department column in every LMS. Job Role is the usable segment dimension
+  # when the export has one and no HR roster is loaded.
+  department:
+    aliases: ["Department", "Dept", "Org Unit", "Job Role"]
+    type: string
+    required: false
+
+# ENGAGED is derived in the adapter as progress > 0 OR an assessment attempt —
+# see comms_dashboard/ingest/adapters/lms.py.
+
+on_unknown_columns: warn
+on_missing_optional: warn
+on_missing_required: reject_file
