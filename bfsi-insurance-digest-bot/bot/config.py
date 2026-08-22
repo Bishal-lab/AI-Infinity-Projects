@@ -53,6 +53,20 @@ def _as_bool(value: Any, key: str, where: str) -> bool:
     raise ConfigError(f"{where}: '{key}' must be true or false, got {value!r}")
 
 
+def _as_str_map(value: Any, key: str, where: str) -> dict[str, str]:
+    """A mapping of plain strings; keys are lowercased for case-free lookup."""
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise ConfigError(f"{where}: '{key}' must be a mapping of name to name")
+    out: dict[str, str] = {}
+    for raw_key, raw_value in value.items():
+        if not isinstance(raw_key, str) or not isinstance(raw_value, str):
+            raise ConfigError(f"{where}: '{key}' entries must all be strings")
+        out[raw_key.strip().lower()] = raw_value.strip()
+    return out
+
+
 def _as_str_list(value: Any, key: str, where: str) -> tuple[str, ...]:
     if value is None:
         return ()
@@ -83,6 +97,11 @@ class Section:
     multiplier: float
     strong: tuple[str, ...]
     supporting: tuple[str, ...]
+    #: Whether this section's strong keywords are, on their own, proof that a
+    #: story belongs to the BFSI world. True for sections whose vocabulary names
+    #: the industry ("HDFC Life", "IRDAI"); false for sections whose vocabulary
+    #: names a kind of event that happens in every industry ("IPO", "appoints").
+    certifies_domain: bool = True
 
 
 @dataclass(frozen=True)
@@ -106,6 +125,8 @@ class DigestSettings:
     min_score: float = 3.0
     send_when_empty: bool = True
     section_order: str = "fixed"
+    #: hostname -> masthead, for feeds that report an outlet by domain.
+    publisher_aliases: Mapping[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -249,6 +270,9 @@ def _parse_sections(raw: Mapping[str, Any], where: str) -> tuple[Section, ...]:
                 multiplier=_as_float(entry.get("multiplier", 1.0), "multiplier", label),
                 strong=strong,
                 supporting=supporting,
+                certifies_domain=_as_bool(
+                    entry.get("certifies_domain", True), "certifies_domain", label
+                ),
             )
         )
     return tuple(sections)
@@ -293,6 +317,9 @@ def load_config(config_dir: str | os.PathLike[str] | None = None) -> Config:
         min_score=_as_float(digest_raw.get("min_score", 3.0), "min_score", where),
         send_when_empty=_as_bool(digest_raw.get("send_when_empty", True), "send_when_empty", where),
         section_order=section_order,
+        publisher_aliases=_as_str_map(
+            digest_raw.get("publisher_aliases"), "publisher_aliases", where
+        ),
     )
     if digest.lookback_hours <= 0:
         raise ConfigError(f"{where}: digest.lookback_hours must be positive")

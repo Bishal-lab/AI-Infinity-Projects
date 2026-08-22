@@ -12,14 +12,18 @@ import html
 import re
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
+from typing import Mapping
 from urllib.parse import parse_qsl, urlsplit, urlunsplit, urlencode
 
 from .config import Source
+from .dedupe import title_tokens
 from .model import Article, RawEntry
 
 _TAG = re.compile(r"<[^>]+>")
 _WHITESPACE = re.compile(r"\s+")
 _TRAILING_ATTRIBUTION = re.compile(r"\s+[-–—|]\s+[^-–—|]{2,40}$")
+# A publisher that is really a hostname: "livemint.com", "scanx.trade".
+_HOSTNAME = re.compile(r"^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$", re.IGNORECASE)
 
 # Campaign and session parameters. Two URLs that differ only by these are the
 # same story, and keeping them makes the seen-store leak duplicates.
@@ -150,20 +154,64 @@ def clean_title(title: str, publisher: str) -> str:
     return text
 
 
-def to_article(entry: RawEntry, source: Source, summary_limit: int = 320) -> Article | None:
+def echoes_title(summary: str, title: str, publisher: str = "") -> bool:
+    """Whether a summary says nothing the headline has not already said.
+
+    Search feeds set an item's description to its own headline with the outlet
+    appended, so printing both shows the reader the same sentence twice. The
+    test is a strict subset of meaningful words — a summary survives the moment
+    it contributes one word of its own — which is what keeps a genuinely short
+    summary from being mistaken for an echo.
+    """
+    if not summary:
+        return False
+    words = title_tokens(summary)
+    if not words:
+        # Nothing but stopwords and short fragments; no information either way.
+        return True
+    return words <= (title_tokens(title) | title_tokens(publisher))
+
+
+def clean_publisher(publisher: str, aliases: Mapping[str, str] | None = None) -> str:
+    """Tidy the outlet name a feed reports.
+
+    Google News sometimes names the outlet by hostname rather than masthead.
+    A hostname is resolved through the configured alias map, and otherwise left
+    alone: no rule turns "bfsi.economictimes.indiatimes.com" into "ET BFSI"
+    without guessing, and a confidently wrong byline is worse than an ugly one.
+    """
+    name = strip_html(publisher)
+    if not name or not _HOSTNAME.match(name):
+        return name
+    host = name.lower().removeprefix("www.")
+    return (aliases or {}).get(host, host)
+
+
+def to_article(
+    entry: RawEntry,
+    source: Source,
+    summary_limit: int = 320,
+    publisher_aliases: Mapping[str, str] | None = None,
+) -> Article | None:
     """Build an `Article`, or None when the entry lacks a title or a link."""
-    publisher = strip_html(entry.publisher)
+    publisher = clean_publisher(entry.publisher, publisher_aliases)
     title = clean_title(entry.title, publisher)
     url = canonical_url(entry.link)
     if not title or not url:
         return None
+
+    # Tested before truncation, so a long summary cannot be cut down into
+    # something that merely looks like an echo of the headline.
+    summary = strip_html(entry.summary)
+    if echoes_title(summary, title, publisher):
+        summary = ""
 
     return Article(
         source_id=source.id,
         source_name=source.name,
         title=truncate(title, 200),
         url=url,
-        summary=truncate(strip_html(entry.summary), summary_limit),
+        summary=truncate(summary, summary_limit),
         published=parse_date(entry.published_raw),
         publisher=publisher,
         guid=(entry.guid or "").strip(),

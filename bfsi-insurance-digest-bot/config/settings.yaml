@@ -30,6 +30,19 @@ digest:
   # A digest that never arrives is indistinguishable from a broken bot.
   send_when_empty: true
 
+  # Search feeds occasionally name an outlet by hostname rather than masthead.
+  # Map the ones you see to a proper name here. Anything not listed is shown as
+  # the hostname: no rule turns a domain into a masthead without guessing, and a
+  # confidently wrong byline is worse than an ugly one.
+  publisher_aliases:
+    bfsi.economictimes.indiatimes.com: ET BFSI
+    economictimes.indiatimes.com: The Economic Times
+    livemint.com: Mint
+    thehindubusinessline.com: BusinessLine
+    business-standard.com: Business Standard
+    financialexpress.com: Financial Express
+    moneycontrol.com: Moneycontrol
+
   # Order sections by the order they appear in topics.yaml (fixed), or by how
   # much news each one has today (volume).
   section_order: fixed

@@ -17,10 +17,23 @@ guesswork.
    outright — cricket, cinema, horoscopes, the "gold rate today" filler that
    rides along on general business feeds.
 2. **The domain gate.** The story must show it is about financial services, in
-   one of three ways: it matched a `strong` keyword from any section; it matched
-   something in `domain_gate`; or it came from a specialist desk (a source whose
-   `weight` is at or above `gate_bypass_weight`). A story matching only
-   *supporting* words — "market", "app", "data" — does not get in.
+   one of three ways: it matched a `strong` keyword from a section marked
+   `certifies_domain` (the default); it matched something in `domain_gate`; or
+   it came from a specialist desk (a source whose `weight` is at or above
+   `gate_bypass_weight`). A story matching only *supporting* words — "market",
+   "app", "data" — does not get in.
+
+   Three sections set `certifies_domain: false`: **Results, Deals & People**,
+   **Markets & Macro** and **Technology & InsurTech**. Their keywords name a
+   *kind of event* rather than this industry — "IPO", "appoints", "inflation",
+   "AI" happen everywhere — so a story filed under them has to prove the domain
+   some other way. Without this, the single word "IPO" admitted any small-cap
+   listing on earth into a BFSI brief.
+
+   The trade-off: those three sections are stricter than the other four. If one
+   starts looking thin, either flip its `certifies_domain` back to `true`, or —
+   better — add the specific term you are missing to `domain_gate`, which keeps
+   the gate meaningful.
 3. **Section scores.** Each section scores the story on its own keywords: a
    `strong` hit is worth `strong_weight` (3.0), a `supporting` hit
    `supporting_weight` (1.0), and a hit in the headline is worth

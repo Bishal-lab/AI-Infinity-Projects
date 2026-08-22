@@ -2,9 +2,18 @@
 #
 # How an article is scored
 #   1. Exclusions   any match in `exclude` drops the article outright.
-#   2. Domain gate  the article must match something in `domain_gate`, unless it
-#                   came from a source whose weight is >= gate_bypass_weight
-#                   (a specialist BFSI desk — everything it prints is on-topic).
+#   2. Domain gate  the article must show it belongs to the BFSI world, in one
+#                   of three ways: it matched something in `domain_gate`; it
+#                   matched a strong keyword from a section marked
+#                   `certifies_domain` (the default — "HDFC Life" and "IRDAI"
+#                   say "insurance" without using the word); or it came from a
+#                   source whose weight is >= gate_bypass_weight (a specialist
+#                   BFSI desk — everything it prints is on-topic).
+#                   Sections whose keywords name a kind of event rather than
+#                   this industry ("IPO", "appoints", "repo rate") set
+#                   `certifies_domain: false`, so a story filed under them has
+#                   to prove the domain some other way. Without that, the word
+#                   "IPO" alone would admit any company on earth.
 #   3. Sections     every section scores the article on its own keywords:
 #                     strong keyword     -> strong_weight
 #                     supporting keyword -> supporting_weight
@@ -85,6 +94,18 @@ domain_gate:
   - asset management
   - wealth management
   - payments
+  # Terms that occur nowhere but financial services. They matter because the
+  # sections that own them (markets_macro, technology) do not certify the
+  # domain themselves — without these, a genuine UPI or repo-rate story would
+  # have nothing to prove itself with. Anything ambiguous across industries
+  # ("inflation", "AI", "IPO") deliberately stays out.
+  - UPI
+  - account aggregator
+  - monetary policy
+  - repo rate
+  - bond yield
+  - NPS
+  - EPFO
 
 sections:
   - id: life_insurance
@@ -345,6 +366,10 @@ sections:
     title: Results, Deals & People
     emoji: "📈"
     multiplier: 1.0
+    # Every one of these words describes something that happens in every
+    # industry, so they cannot vouch for a story being BFSI. A results or deals
+    # item has to name a financial firm, or come from a specialist desk.
+    certifies_domain: false
     strong:
       - quarterly results
       - Q1 results
@@ -389,6 +414,10 @@ sections:
     title: Markets & Macro
     emoji: "🌐"
     multiplier: 0.9
+    # Macro vocabulary reaches well past financial services; "inflation" and
+    # "GDP growth" are in every industry's news. The gate list already carries
+    # the terms that matter here (mutual fund, pension, capital markets).
+    certifies_domain: false
     strong:
       - repo rate
       - monetary policy committee
@@ -430,6 +459,10 @@ sections:
     title: Technology & InsurTech
     emoji: "⚙️"
     multiplier: 0.9
+    # "AI", "cloud migration" and "cybersecurity" belong to no one industry.
+    # The genuinely BFSI terms here — insurtech, fintech, UPI, account
+    # aggregator — are all in the gate list, so real stories still get through.
+    certifies_domain: false
     strong:
       - insurtech
       - fintech

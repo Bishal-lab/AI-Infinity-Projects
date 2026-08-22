@@ -58,8 +58,10 @@ Each run:
 1. **Fetches** every enabled feed in `config/sources.yaml` (11 of them),
    concurrently, with retries. A dead feed is reported, not fatal.
 2. **Cleans** each item: strips markup, parses whichever of the three date
-   formats the feed used, removes campaign tracking from URLs, and drops the
-   "` - Publisher`" suffix that search feeds append to headlines.
+   formats the feed used, removes campaign tracking from URLs, drops the
+   "` - Publisher`" suffix that search feeds append to headlines, and discards a
+   summary that only repeats the headline back (which is what search feeds put
+   in the description field).
 3. **Keeps the last 26 hours.** Wider than a day on purpose, so a story
    published at 07:55 IST is not lost between two runs.
 4. **Scores and routes** every story against the taxonomy in
@@ -311,7 +313,7 @@ pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-134 tests, all offline: feed parsing runs against fixtures in
+149 tests, all offline: feed parsing runs against fixtures in
 `tests/fixtures/`, delivery is faked, and no test opens a socket. The suite
 covers the shipped `config/` too, so an edit to the taxonomy that breaks routing
 shows up here rather than at 08:00.
