@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>IRDAI - Google News</title>
+<item>
+  <title>IRDAI eases surrender value norms for life insurers - Mint</title>
+  <link>https://news.google.com/rss/articles/CBMiabcdef?oc=5</link>
+  <description>&lt;a href="https://mint.example.com/x"&gt;IRDAI eases&lt;/a&gt;&nbsp;&nbsp;Mint</description>
+  <pubDate>Wed, 19 Aug 2026 01:05:00 GMT</pubDate>
+  <source url="https://mint.example.com">Mint</source>
+</item>
+<item>
+  <title>Bima Sugam rollout enters next phase - BusinessLine</title>
+  <link>https://news.google.com/rss/articles/CBMighij?oc=5</link>
+  <description>The insurance marketplace adds life insurers.</description>
+  <pubDate>Wed, 19 Aug 2026 00:15:00 GMT</pubDate>
+  <source url="https://bl.example.com">BusinessLine</source>
+</item>
+</channel></rss>

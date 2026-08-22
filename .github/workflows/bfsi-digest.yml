@@ -1,0 +1,112 @@
+# Sends the BFSI & life insurance brief to Telegram and Gmail every morning.
+#
+# The schedule is UTC, always: 02:30 UTC is 08:00 IST. The half-hour offset is
+# deliberate — GitHub's scheduler queues heavily on the hour, and a job asked
+# for at :00 routinely starts ten or fifteen minutes late.
+#
+# Two things worth knowing about scheduled workflows:
+#   * GitHub disables them after 60 days with no commits to the default branch.
+#     A single commit re-arms them.
+#   * A scheduled run is best-effort. If GitHub drops one, the next morning's
+#     26-hour window picks up the stories that were missed.
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   TELEGRAM_BOT_TOKEN  TELEGRAM_CHAT_ID  GMAIL_ADDRESS  GMAIL_APP_PASSWORD
+# Optional: EMAIL_TO (defaults to GMAIL_ADDRESS), EMAIL_FROM_NAME
+
+name: BFSI digest
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: What to do
+        type: choice
+        default: run
+        options:
+          - run             # build and send
+          - dry-run         # build, upload the output, send nothing
+          - check-sources   # fetch every feed and report on its health
+          - test-delivery   # verify the Telegram and Gmail credentials
+
+concurrency:
+  group: bfsi-digest
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: bfsi-insurance-digest-bot
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
+      EMAIL_FROM_NAME: ${{ secrets.EMAIL_FROM_NAME }}
+      MODE: ${{ inputs.mode || 'run' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: bfsi-insurance-digest-bot/requirements.txt
+
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+
+      # The seen-store is what stops the overlapping window repeating yesterday's
+      # headlines. The runner is thrown away after each job, so it is carried
+      # between runs in the Actions cache: a fresh key every run, restored from
+      # whatever the most recent run left behind.
+      - name: Restore the seen-store
+        uses: actions/cache/restore@v4
+        with:
+          path: bfsi-insurance-digest-bot/state
+          key: bfsi-digest-state-${{ github.run_id }}
+          restore-keys: bfsi-digest-state-
+
+      - name: Send the digest
+        if: env.MODE == 'run'
+        run: python -m bot run
+
+      - name: Build the digest without sending
+        if: env.MODE == 'dry-run'
+        run: python -m bot run --dry-run
+
+      - name: Check the feeds
+        if: env.MODE == 'check-sources'
+        run: python -m bot check-sources
+
+      - name: Verify the delivery credentials
+        if: env.MODE == 'test-delivery'
+        run: python -m bot test-delivery
+
+      - name: Save the seen-store
+        # Runs even when delivery failed, so a retry does not re-send what did
+        # get through. Skipped for the read-only modes, which never write it.
+        if: always() && (env.MODE == 'run')
+        uses: actions/cache/save@v4
+        with:
+          path: bfsi-insurance-digest-bot/state
+          key: bfsi-digest-state-${{ github.run_id }}
+
+      - name: Upload the rendered brief
+        if: env.MODE == 'dry-run'
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-preview
+          path: bfsi-insurance-digest-bot/out
+          retention-days: 7
