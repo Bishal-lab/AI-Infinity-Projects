@@ -55,6 +55,16 @@ def test_every_source_hint_names_a_real_section():
     assert all(s.section_hint in known for s in config.sources if s.section_hint)
 
 
+def test_the_sections_that_certify_the_domain_are_the_industry_ones():
+    """The three event-shaped sections must not vouch for a story being BFSI,
+    or a single generic word like "IPO" reopens the gate to every industry."""
+    config = load_config(ROOT / "config")
+    certifying = {s.id for s in config.sections if s.certifies_domain}
+    assert certifying == {
+        "life_insurance", "regulation", "general_health_insurance", "banking_nbfc",
+    }
+
+
 def test_the_shipped_thresholds_are_self_consistent():
     """A single strong keyword in a headline must be able to clear the bar,
     or the digest would only ever carry keyword-dense stories."""
@@ -70,6 +80,30 @@ def test_missing_optional_settings_fall_back_to_defaults(tmp_path):
     assert config.digest.lookback_hours == 26
     assert config.telegram.enabled and config.email.enabled
     assert config.state.path.name == "seen.json"
+
+
+def test_certifies_domain_defaults_to_true_and_can_be_turned_off(tmp_path):
+    topics = TOPICS + (
+        "  - id: corporate\n"
+        "    title: Corporate\n"
+        "    strong: [IPO]\n"
+        "    certifies_domain: false\n"
+    )
+    config = load_config(write_config(tmp_path / "c", topics=topics))
+    assert config.section("life_insurance").certifies_domain is True
+    assert config.section("corporate").certifies_domain is False
+
+
+def test_publisher_aliases_are_parsed_and_keyed_case_free(tmp_path):
+    settings = SETTINGS + "  publisher_aliases:\n    LiveMint.com: Mint\n"
+    config = load_config(write_config(tmp_path / "c", settings=settings))
+    assert config.digest.publisher_aliases == {"livemint.com": "Mint"}
+
+
+def test_a_malformed_publisher_alias_map_is_rejected(tmp_path):
+    settings = SETTINGS + "  publisher_aliases: not-a-mapping\n"
+    with pytest.raises(ConfigError, match="publisher_aliases"):
+        load_config(write_config(tmp_path / "c", settings=settings))
 
 
 def test_a_relative_state_path_is_anchored_to_the_project(tmp_path):

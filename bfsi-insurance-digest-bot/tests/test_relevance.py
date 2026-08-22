@@ -82,6 +82,41 @@ def test_supporting_words_alone_do_not_open_the_domain_gate(scorer):
     assert verdict.reason == "outside the BFSI domain"
 
 
+def test_a_generic_corporate_event_does_not_prove_the_domain(scorer):
+    """"IPO" and "appoints" happen in every industry. Before the corporate
+    section stopped certifying the domain, this small-cap listing reached a
+    BFSI brief on the word IPO alone."""
+    verdict = scorer.score(
+        article("Mopshop Distribution Limited IPO - Check IPO Date, Price & Allotment",
+                source="gnews-bfsi")
+    )
+    assert not verdict.accepted
+    assert verdict.reason == "outside the BFSI domain"
+
+
+def test_the_same_corporate_event_passes_once_it_names_a_financial_firm(scorer):
+    verdict = scorer.score(
+        article("HDFC Life board approves dividend of Rs 2 per share", source="gnews-bfsi")
+    )
+    assert verdict.accepted
+    assert verdict.section_id == "corporate"
+
+
+def test_a_non_certifying_section_still_admits_a_real_bfsi_story(scorer):
+    """Technology does not certify the domain, so its genuine terms — fintech,
+    UPI, account aggregator — have to be in the gate list for stories like this
+    to survive. This test is what catches their removal."""
+    assert scorer.score(
+        article("Payments and AI drive $361m in FinTech funding this week")
+    ).accepted
+    assert scorer.score(
+        article("UPI transaction volumes cross a new monthly high")
+    ).accepted
+    assert scorer.score(
+        article("RBI holds repo rate as the MPC flags inflation risks")
+    ).accepted
+
+
 def test_a_strong_keyword_is_its_own_proof_of_domain(scorer):
     """"HDFC Life" and "VNB margin" never say the word insurance, and a brief
     that dropped them for it would be missing its own headline stories."""

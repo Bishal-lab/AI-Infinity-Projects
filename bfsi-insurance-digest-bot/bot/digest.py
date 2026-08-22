@@ -13,7 +13,7 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Callable, Sequence
+from typing import Callable, Mapping, Sequence
 
 from .config import Config, Section, Source
 from .dedupe import dedupe
@@ -115,11 +115,13 @@ class Digest:
 # Pipeline stages
 # --------------------------------------------------------------------------- #
 
-def collect_articles(results: Sequence[FetchResult]) -> list[Article]:
+def collect_articles(
+    results: Sequence[FetchResult], publisher_aliases: Mapping[str, str] | None = None
+) -> list[Article]:
     articles: list[Article] = []
     for result in results:
         for entry in result.entries:
-            article = to_article(entry, result.source)
+            article = to_article(entry, result.source, publisher_aliases=publisher_aliases)
             if article is not None:
                 articles.append(article)
     return articles
@@ -238,7 +240,7 @@ def build_digest(
 
     stats = Stats(entries_fetched=sum(len(result.entries) for result in results))
 
-    articles = collect_articles(results)
+    articles = collect_articles(results, config.digest.publisher_aliases)
     stats.articles_parsed = len(articles)
 
     articles = within_window(articles, window_start, now, config.digest.undated_items)

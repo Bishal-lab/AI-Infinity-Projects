@@ -185,7 +185,11 @@ class Scorer:
             strong_hits = self._contributions(
                 entry.strong, title, summary, self.scoring.strong_weight
             )
-            matched_strong = matched_strong or bool(strong_hits)
+            # Only a section whose vocabulary names the industry can vouch for a
+            # story being BFSI. "IPO" and "appoints" happen everywhere, so the
+            # corporate-style sections do not open the gate on their own.
+            if strong_hits and entry.section.certifies_domain:
+                matched_strong = True
             contributions = strong_hits + self._contributions(
                 entry.supporting, title, summary, self.scoring.supporting_weight
             )

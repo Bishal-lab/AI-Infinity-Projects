@@ -10,7 +10,9 @@ from bot.config import Source
 from bot.model import RawEntry
 from bot.normalize import (
     canonical_url,
+    clean_publisher,
     clean_title,
+    echoes_title,
     parse_date,
     strip_html,
     to_article,
@@ -100,6 +102,80 @@ def test_to_article_builds_a_clean_article():
 def test_to_article_rejects_entries_with_nothing_to_link_to():
     assert to_article(RawEntry(title="No link"), SOURCE) is None
     assert to_article(RawEntry(link="https://x.test/1"), SOURCE) is None
+
+
+def test_a_summary_that_only_repeats_the_headline_is_an_echo():
+    """Search feeds set the description to the headline plus the outlet, so
+    printing both shows the reader the same sentence twice."""
+    assert echoes_title(
+        "Which life insurers paid the highest share of premium as commission? Cafemutual",
+        "Which life insurers paid the highest share of premium as commission?",
+        "Cafemutual",
+    )
+    assert echoes_title("IRDAI eases norms  Mint", "IRDAI eases norms", "Mint")
+
+
+def test_a_summary_survives_one_word_of_its_own():
+    """The test is a strict subset, so a genuinely short summary is safe."""
+    assert not echoes_title(
+        "The central bank imposed a Rs 8.10 lakh penalty.",
+        "RBI imposes penalty on Progfin for non-compliance",
+        "ET BFSI",
+    )
+    assert not echoes_title(
+        "Non-commercial vehicle segments gained ground",
+        "Auto NBFC disbursements surge 20.7% in Q1FY27",
+        "BusinessLine",
+    )
+
+
+def test_an_absent_summary_is_not_an_echo():
+    assert not echoes_title("", "Some headline", "Mint")
+
+
+def test_to_article_drops_an_echoing_summary():
+    article = to_article(
+        RawEntry(
+            title="IRDAI eases surrender value norms - Mint",
+            link="https://site.test/x",
+            summary="IRDAI eases surrender value norms&nbsp;&nbsp;Mint",
+            publisher="Mint",
+        ),
+        SOURCE,
+    )
+    assert article.title == "IRDAI eases surrender value norms"
+    assert article.summary == ""
+
+
+def test_to_article_keeps_a_real_summary():
+    article = to_article(
+        RawEntry(
+            title="IRDAI eases surrender value norms",
+            link="https://site.test/x",
+            summary="The regulator relaxed the floor on non-linked savings products.",
+            publisher="Mint",
+        ),
+        SOURCE,
+    )
+    assert article.summary.startswith("The regulator relaxed")
+
+
+def test_clean_publisher_resolves_a_hostname_through_the_alias_map():
+    aliases = {"bfsi.economictimes.indiatimes.com": "ET BFSI", "livemint.com": "Mint"}
+    assert clean_publisher("bfsi.economictimes.indiatimes.com", aliases) == "ET BFSI"
+    assert clean_publisher("www.livemint.com", aliases) == "Mint"
+
+
+def test_clean_publisher_leaves_a_masthead_alone():
+    """Only hostname-shaped names are touched; a real byline passes through."""
+    assert clean_publisher("(Re)in Asia", {}) == "(Re)in Asia"
+    assert clean_publisher("Mint", {"mint": "WRONG"}) == "Mint"
+
+
+def test_an_unmapped_hostname_is_left_as_it_is():
+    """No rule turns a domain into a masthead without guessing, and a
+    confidently wrong byline is worse than an ugly one."""
+    assert clean_publisher("scanx.trade", {}) == "scanx.trade"
 
 
 def test_attribution_falls_back_to_the_source_name():
