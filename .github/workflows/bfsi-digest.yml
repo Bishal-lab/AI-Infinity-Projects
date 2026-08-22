@@ -28,6 +28,7 @@ on:
         options:
           - run             # build and send
           - dry-run         # build, upload the output, send nothing
+          - preview         # build and print it into this job log, send nothing
           - check-sources   # fetch every feed and report on its health
           - test-delivery   # verify the Telegram and Gmail credentials
 
@@ -85,6 +86,12 @@ jobs:
       - name: Build the digest without sending
         if: env.MODE == 'dry-run'
         run: python -m bot run --dry-run
+
+      - name: Print the digest into the log
+        if: env.MODE == 'preview'
+        # Reads the brief without downloading an artifact, and without touching
+        # the seen-store — so running it never costs you a story tomorrow.
+        run: python -m bot preview
 
       - name: Check the feeds
         if: env.MODE == 'check-sources'
