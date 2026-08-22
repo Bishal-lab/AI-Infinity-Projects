@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Business Standard Finance</title>
+  <entry>
+    <title>Bank credit growth slows to 11% as deposit growth lags</title>
+    <link rel="edit" href="https://bs.example.com/edit/1"/>
+    <link rel="alternate" href="https://www.bs.example.com/finance/bank-credit-growth/"/>
+    <summary>Gross NPA held steady while CASA ratio slipped, RBI data shows.</summary>
+    <published>2026-08-19T02:45:00Z</published>
+    <id>bs-1</id>
+  </entry>
+  <entry>
+    <title>IRDAI relaxes surrender value norms for life insurance companies</title>
+    <link rel="alternate" href="https://www.bs.example.com/finance/irdai-surrender/"/>
+    <summary>Same story, different desk.</summary>
+    <published>2026-08-19T01:20:00Z</published>
+    <id>bs-2</id>
+  </entry>
+</feed>

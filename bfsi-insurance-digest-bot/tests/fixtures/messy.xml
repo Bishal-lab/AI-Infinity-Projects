@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Messy Feed</title>
+<item>
+  <title>Life insurance premiums grow 9% &nbsp; in July</title>
+  <link>https://messy.example.com/a?id=1&cat=2</link>
+  <description>New business premium rose; agency channel led growth &mdash; IRDAI data.</description>
+  <pubDate>2026-08-19 03:30:00</pubDate>
+</item>
+<item>
+  <title>No link here</title>
+  <description>Should be dropped.</description>
+</item>
+</channel></rss>

@@ -1,0 +1,145 @@
+"""Delivery over the Telegram Bot API.
+
+Credentials come from the environment, never from the config files:
+
+    TELEGRAM_BOT_TOKEN   the token @BotFather issued
+    TELEGRAM_CHAT_ID     one chat id, or several separated by commas
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+import time
+from typing import Sequence
+
+import requests
+
+from ..config import Config
+from . import DeliveryResult
+
+log = logging.getLogger(__name__)
+
+API_ROOT = "https://api.telegram.org"
+
+#: Telegram tolerates roughly one message per second to a given chat. The digest
+#: is at most a handful of messages, so a plain pause is enough.
+_PAUSE_SECONDS = 1.1
+_MAX_ATTEMPTS = 4
+
+
+class TelegramError(RuntimeError):
+    pass
+
+
+def token() -> str:
+    return (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip()
+
+
+def chat_ids() -> list[str]:
+    raw = os.environ.get("TELEGRAM_CHAT_ID") or ""
+    return [part.strip() for part in raw.replace(";", ",").split(",") if part.strip()]
+
+
+def configured() -> bool:
+    return bool(token() and chat_ids())
+
+
+def missing_settings() -> list[str]:
+    missing = []
+    if not token():
+        missing.append("TELEGRAM_BOT_TOKEN")
+    if not chat_ids():
+        missing.append("TELEGRAM_CHAT_ID")
+    return missing
+
+
+def _call(method: str, payload: dict, timeout: float) -> dict:
+    """One Bot API call, honouring 429 retry_after and retrying 5xx."""
+    url = f"{API_ROOT}/bot{token()}/{method}"
+    last_error = "unknown error"
+
+    for attempt in range(1, _MAX_ATTEMPTS + 1):
+        try:
+            response = requests.post(url, json=payload, timeout=timeout)
+        except requests.RequestException as exc:
+            last_error = f"{type(exc).__name__}: {exc}"
+        else:
+            if response.status_code == 429:
+                wait = 3.0
+                try:
+                    wait = float(response.json().get("parameters", {}).get("retry_after", 3))
+                except ValueError:
+                    pass
+                log.warning("Telegram rate limit; waiting %.0fs", wait)
+                time.sleep(min(wait, 30.0) + 0.5)
+                last_error = "rate limited"
+                continue
+            try:
+                body = response.json()
+            except ValueError:
+                body = {}
+            if response.ok and body.get("ok"):
+                return body.get("result", {})
+            description = body.get("description") or f"HTTP {response.status_code}"
+            # 4xx here means a bad token, a wrong chat id or malformed HTML —
+            # none of which a retry will fix.
+            if 400 <= response.status_code < 500:
+                raise TelegramError(f"{method} rejected: {description}")
+            last_error = description
+        if attempt < _MAX_ATTEMPTS:
+            time.sleep(2.0 * attempt)
+
+    raise TelegramError(f"{method} failed after {_MAX_ATTEMPTS} attempts: {last_error}")
+
+
+def verify(timeout: float = 20.0) -> str:
+    """Check the token and every chat id. Returns a human-readable summary."""
+    if not configured():
+        raise TelegramError("missing " + ", ".join(missing_settings()))
+    me = _call("getMe", {}, timeout)
+    names = []
+    for chat in chat_ids():
+        info = _call("getChat", {"chat_id": chat}, timeout)
+        label = info.get("title") or info.get("username") or info.get("first_name") or chat
+        names.append(f"{label} ({chat})")
+    return f"bot @{me.get('username', '?')} → " + ", ".join(names)
+
+
+def send(messages: Sequence[str], config: Config, timeout: float = 30.0) -> DeliveryResult:
+    """Send the rendered messages to every configured chat."""
+    if not configured():
+        return DeliveryResult(
+            "telegram", False, "not configured: " + ", ".join(missing_settings())
+        )
+    if not messages:
+        return DeliveryResult("telegram", True, "nothing to send")
+
+    chats = chat_ids()
+    sent = 0
+    try:
+        for chat in chats:
+            for index, text in enumerate(messages):
+                _call(
+                    "sendMessage",
+                    {
+                        "chat_id": chat,
+                        "text": text,
+                        "parse_mode": "HTML",
+                        "disable_web_page_preview": config.telegram.disable_web_page_preview,
+                    },
+                    timeout,
+                )
+                sent += 1
+                if index < len(messages) - 1 or chat != chats[-1]:
+                    time.sleep(_PAUSE_SECONDS)
+    except TelegramError as exc:
+        return DeliveryResult("telegram", False, str(exc), recipients=len(chats), messages=sent)
+
+    return DeliveryResult(
+        "telegram",
+        True,
+        f"{sent} message(s) to {len(chats)} chat(s)",
+        recipients=len(chats),
+        messages=sent,
+    )

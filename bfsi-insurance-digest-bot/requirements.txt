@@ -1,0 +1,9 @@
+# Runtime dependencies. Deliberately short: this job has to install cleanly on a
+# schedule for years with nobody watching, so it uses the standard library for
+# feed parsing, e-mail and scheduling glue, and pulls in only these.
+requests==2.32.3
+PyYAML==6.0.2
+
+# Timezone database. Present on most Linux images already, but the digest is
+# defined in IST and must not fall back to UTC on a slim container.
+tzdata==2024.2

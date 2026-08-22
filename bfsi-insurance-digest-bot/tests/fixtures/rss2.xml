@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>ET BFSI Insurance</title>
+    <link>https://bfsi.example.com/insurance</link>
+    <item>
+      <title>IRDAI eases surrender value norms for life insurers</title>
+      <link>https://bfsi.example.com/insurance/irdai-surrender-value?utm_source=rss&amp;utm_medium=feed</link>
+      <description>&lt;p&gt;The regulator has relaxed the surrender value floor on non-linked savings products.&lt;/p&gt;</description>
+      <pubDate>Wed, 19 Aug 2026 06:30:00 +0530</pubDate>
+      <guid isPermaLink="false">bfsi-1</guid>
+      <dc:creator>Staff Reporter</dc:creator>
+    </item>
+    <item>
+      <title>HDFC Life Q1 profit rises 15% on stronger VNB margin</title>
+      <link>https://bfsi.example.com/insurance/hdfc-life-q1</link>
+      <description>Annualised premium equivalent grew 12% &amp; persistency improved.</description>
+      <pubDate>Wed, 19 Aug 2026 04:10:00 +0530</pubDate>
+      <guid isPermaLink="false">bfsi-2</guid>
+    </item>
+    <item>
+      <title>Weekend cricket roundup</title>
+      <link>https://bfsi.example.com/sport/cricket</link>
+      <description>Not a BFSI story at all.</description>
+      <pubDate>Wed, 19 Aug 2026 05:00:00 +0530</pubDate>
+      <guid isPermaLink="false">bfsi-3</guid>
+    </item>
+  </channel>
+</rss>

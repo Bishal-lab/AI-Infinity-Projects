@@ -1,0 +1,464 @@
+# What counts as BFSI news, and which section a story belongs in.
+#
+# How an article is scored
+#   1. Exclusions   any match in `exclude` drops the article outright.
+#   2. Domain gate  the article must match something in `domain_gate`, unless it
+#                   came from a source whose weight is >= gate_bypass_weight
+#                   (a specialist BFSI desk — everything it prints is on-topic).
+#   3. Sections     every section scores the article on its own keywords:
+#                     strong keyword     -> strong_weight
+#                     supporting keyword -> supporting_weight
+#                   a hit in the headline is worth title_multiplier times a hit
+#                   in the summary, each distinct keyword counts once, and the
+#                   section subtotal is scaled by that section's `multiplier`.
+#   4. Routing      the best-scoring section wins; ties break by the order
+#                   sections appear below. The source's section_hint adds
+#                   hint_bonus to that section.
+#   5. Admission    best section score + source weight >= digest.min_score.
+#
+# Matching is case-insensitive and on word boundaries, so "LIC" does not match
+# "policy" and "AI" does not match "Mumbai". Multi-word entries match as phrases
+# with flexible whitespace.
+
+scoring:
+  strong_weight: 3.0
+  supporting_weight: 1.0
+  title_multiplier: 1.5
+  hint_bonus: 2.0
+  gate_bypass_weight: 2.0
+  # Cap how many distinct keywords can contribute, so a listicle that name-drops
+  # thirty insurers cannot outrank a genuine regulatory circular.
+  max_keywords_counted: 8
+
+# Anything here disqualifies an article no matter what else it matched. These
+# are the recurring off-topic items that ride along on general business feeds.
+exclude:
+  - horoscope
+  - astrology
+  - zodiac
+  - cricket
+  - IPL
+  - box office
+  - web series
+  - movie review
+  - recipe
+  - admit card
+  - sarkari result
+  - board exam result
+  - gold rate today
+  - silver rate today
+  - petrol price today
+  - diesel price today
+  - match preview
+  - live score
+
+# The article must touch the BFSI world somewhere. Broad on purpose — precision
+# comes from the section scores, this is only a floor.
+domain_gate:
+  - insurance
+  - insurer
+  - reinsurance
+  - policyholder
+  - premium
+  - annuity
+  - actuarial
+  - underwriting
+  - bank
+  - banking
+  - NBFC
+  - lender
+  - lending
+  - credit
+  - deposit
+  - mutual fund
+  - pension
+  - IRDAI
+  - RBI
+  - SEBI
+  - PFRDA
+  - IFSCA
+  - fintech
+  - insurtech
+  - BFSI
+  - financial services
+  - capital markets
+  - asset management
+  - wealth management
+  - payments
+
+sections:
+  - id: life_insurance
+    title: Life Insurance
+    emoji: "🛡️"
+    # Nudged above the other sections: this is the brief's headline subject, so
+    # a story that is both a bank story and a life story files under life.
+    multiplier: 1.2
+    strong:
+      - life insurance
+      - life insurer
+      - life insurance company
+      - LIC
+      - Life Insurance Corporation
+      - HDFC Life
+      - SBI Life
+      - ICICI Prudential Life
+      - Axis Max Life
+      - Max Life
+      - Bajaj Allianz Life
+      - Tata AIA
+      - Kotak Life
+      - Kotak Mahindra Life
+      - PNB MetLife
+      - Aditya Birla Sun Life Insurance
+      - Star Union Dai-ichi
+      - Ageas Federal
+      - Canara HSBC Life
+      - Bandhan Life
+      - Shriram Life
+      - Aviva Life
+      - Future Generali Life
+      - term insurance
+      - term plan
+      - endowment plan
+      - endowment policy
+      - money-back policy
+      - ULIP
+      - unit-linked
+      - unit linked insurance
+      - annuity
+      - immediate annuity
+      - deferred annuity
+      - pension plan
+      - guaranteed return plan
+      - participating policy
+      - par products
+      - non-par
+      - value of new business
+      - VNB
+      - VNB margin
+      - annualised premium equivalent
+      - APE
+      - embedded value
+      - persistency
+      - persistency ratio
+      - first year premium
+      - new business premium
+      - individual APE
+      - group single premium
+      - sum assured
+      - death claim
+      - claim settlement ratio
+      - surrender value
+      - surrender charge
+      - bancassurance
+      - agency channel
+      - POSP
+      - insurance agent
+      - protection gap
+      - mortality experience
+    supporting:
+      - premium
+      - policyholder
+      - nominee
+      - maturity benefit
+      - rider
+      - underwriting
+      - actuarial
+      - mortality
+      - lapse
+      - renewal premium
+      - insurer
+      - insurance penetration
+      - savings product
+
+  - id: regulation
+    title: Regulation & Policy
+    emoji: "⚖️"
+    multiplier: 1.1
+    strong:
+      - IRDAI
+      - Insurance Regulatory and Development Authority
+      - RBI
+      - Reserve Bank of India
+      - SEBI
+      - PFRDA
+      - IFSCA
+      - GIFT City
+      - circular
+      - master circular
+      - master direction
+      - exposure draft
+      - consultation paper
+      - discussion paper
+      - draft guidelines
+      - final guidelines
+      - Insurance Act
+      - Insurance Amendment Bill
+      - Insurance Laws
+      - composite licence
+      - composite license
+      - Bima Sugam
+      - Bima Vistaar
+      - Bima Vahak
+      - FDI in insurance
+      - solvency ratio
+      - solvency margin
+      - risk-based capital
+      - risk based supervision
+      - Ind AS 117
+      - IFRS 17
+      - expenses of management
+      - EOM
+      - show-cause notice
+      - adjudication order
+      - penalty
+      - monetary penalty
+      - GST on insurance
+      - GST Council
+      - policyholder protection
+      - grievance redressal
+      - Bima Bharosa
+      - Ombudsman
+    supporting:
+      - regulator
+      - regulatory
+      - compliance
+      - licence
+      - license
+      - approval
+      - framework
+      - mandate
+      - deadline
+      - norms
+      - rules
+      - notification
+      - amendment
+
+  - id: general_health_insurance
+    title: General & Health Insurance
+    emoji: "🏥"
+    multiplier: 1.0
+    strong:
+      - health insurance
+      - general insurance
+      - non-life insurance
+      - motor insurance
+      - third-party premium
+      - motor own damage
+      - reinsurance
+      - reinsurer
+      - GIC Re
+      - Star Health
+      - Niva Bupa
+      - Care Health
+      - ManipalCigna
+      - ICICI Lombard
+      - HDFC Ergo
+      - Bajaj Allianz General
+      - New India Assurance
+      - United India Insurance
+      - Oriental Insurance
+      - National Insurance
+      - Go Digit
+      - Acko
+      - crop insurance
+      - PMFBY
+      - Ayushman Bharat
+      - cashless settlement
+      - cashless claim
+      - third party administrator
+      - TPA
+      - standalone health insurer
+      - marine insurance
+      - property insurance
+      - cyber insurance
+      - liability insurance
+      - combined ratio
+      - loss ratio
+      - incurred claims ratio
+    supporting:
+      - claim
+      - hospital
+      - network provider
+      - policy wording
+      - deductible
+      - co-pay
+      - waiting period
+
+  - id: banking_nbfc
+    title: Banking & NBFC
+    emoji: "🏦"
+    multiplier: 1.0
+    strong:
+      - NBFC
+      - non-banking financial company
+      - housing finance company
+      - microfinance
+      - MFI
+      - credit growth
+      - deposit growth
+      - CASA ratio
+      - NPA
+      - gross NPA
+      - net NPA
+      - asset quality
+      - slippage
+      - provisioning
+      - capital adequacy
+      - CRAR
+      - priority sector lending
+      - co-lending
+      - securitisation
+      - digital lending
+      - unsecured loan
+      - gold loan
+      - MSME lending
+      - small finance bank
+      - payments bank
+      - cooperative bank
+      - public sector bank
+      - private sector bank
+      - HDFC Bank
+      - ICICI Bank
+      - State Bank of India
+      - Axis Bank
+      - Kotak Mahindra Bank
+      - Punjab National Bank
+      - Bank of Baroda
+      - Bajaj Finance
+      - Shriram Finance
+      - Muthoot Finance
+      - net interest margin
+      - NIM
+    supporting:
+      - bank
+      - banking
+      - loan
+      - lending
+      - borrower
+      - disbursement
+      - branch
+      - deposit
+      - interest rate
+
+  - id: corporate
+    title: Results, Deals & People
+    emoji: "📈"
+    multiplier: 1.0
+    strong:
+      - quarterly results
+      - Q1 results
+      - Q2 results
+      - Q3 results
+      - Q4 results
+      - net profit
+      - profit after tax
+      - IPO
+      - initial public offering
+      - listing gains
+      - stake sale
+      - acquisition
+      - merger
+      - joint venture
+      - fundraise
+      - funding round
+      - board approves
+      - appoints
+      - appointment
+      - MD and CEO
+      - managing director
+      - steps down
+      - resignation
+      - rating upgrade
+      - rating downgrade
+      - dividend
+      - buyback
+      - QIP
+      - preferential allotment
+      - block deal
+    supporting:
+      - profit
+      - revenue
+      - earnings
+      - guidance
+      - investor
+      - valuation
+      - shareholder
+
+  - id: markets_macro
+    title: Markets & Macro
+    emoji: "🌐"
+    multiplier: 0.9
+    strong:
+      - repo rate
+      - monetary policy committee
+      - MPC
+      - monetary policy
+      - inflation
+      - CPI inflation
+      - WPI
+      - GDP growth
+      - bond yield
+      - G-sec
+      - government securities
+      - forex reserves
+      - liquidity deficit
+      - open market operation
+      - CRR
+      - SLR
+      - FPI flows
+      - Nifty Bank
+      - mutual fund
+      - SIP inflows
+      - assets under management
+      - AUM
+      - NPS
+      - EPFO
+      - rate cut
+      - rate hike
+    supporting:
+      - Sensex
+      - Nifty
+      - rupee
+      - market
+      - index
+      - yield
+      - equity
+      - debt market
+
+  - id: technology
+    title: Technology & InsurTech
+    emoji: "⚙️"
+    multiplier: 0.9
+    strong:
+      - insurtech
+      - fintech
+      - digital insurance
+      - artificial intelligence
+      - machine learning
+      - generative AI
+      - GenAI
+      - core system
+      - policy administration system
+      - cloud migration
+      - account aggregator
+      - ONDC
+      - DPDP Act
+      - data protection
+      - cybersecurity
+      - cyber attack
+      - fraud detection
+      - digital onboarding
+      - video KYC
+      - e-insurance account
+      - DigiLocker
+      - UPI
+      - API integration
+    supporting:
+      - platform
+      - technology
+      - digital
+      - automation
+      - partnership
+      - app
+      - data

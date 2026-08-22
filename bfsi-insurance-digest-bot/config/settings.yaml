@@ -1,0 +1,69 @@
+# Runtime settings for the BFSI & Life Insurance daily digest bot.
+# Everything here is safe to edit by hand; nothing in this file is a secret.
+# Secrets (bot token, chat id, mail password) live in environment variables —
+# see .env.example.
+
+digest:
+  # All human-facing timestamps and the "which day is this" decision use this zone.
+  timezone: Asia/Kolkata
+
+  # How far back to look for stories. Slightly more than 24h on purpose: feeds
+  # publish late, and a 26h window means a story that appeared at 07:55 IST
+  # yesterday is not lost between two runs. Duplicates across the overlap are
+  # suppressed by the seen-store, not by the window.
+  lookback_hours: 26
+
+  # Items with no usable publish date at all. "window" trusts them (feeds that
+  # omit dates are usually latest-first), "drop" discards them.
+  undated_items: window
+
+  # Size caps, applied in this order: per source, per section, then overall.
+  max_items_per_source: 4
+  max_items_per_section: 6
+  max_items_total: 24
+
+  # Relevance floor. An article must score at least this much (see topics.yaml)
+  # to make the digest. Raise it if the digest feels noisy, lower it if thin.
+  min_score: 3.0
+
+  # Send a short "nothing significant today" note instead of staying silent.
+  # A digest that never arrives is indistinguishable from a broken bot.
+  send_when_empty: true
+
+  # Order sections by the order they appear in topics.yaml (fixed), or by how
+  # much news each one has today (volume).
+  section_order: fixed
+
+fetch:
+  timeout_seconds: 20
+  max_workers: 8
+  retries: 2
+  backoff_seconds: 2.0
+  user_agent: "bfsi-insurance-digest-bot/1.0 (+https://github.com/Bishal-lab/AI-Infinity-Projects)"
+  # A run that loses this fraction of its sources still sends, but the digest
+  # carries a visible warning footer so a silently rotting feed gets noticed.
+  degraded_failure_ratio: 0.34
+
+state:
+  # Remembers what has already been sent, so the 26h window never re-sends a
+  # story. Delete this file to make the next run treat everything as new.
+  path: state/seen.json
+  retention_days: 14
+
+delivery:
+  telegram:
+    enabled: true
+    disable_web_page_preview: true
+    # Telegram hard-caps a message at 4096 characters; the digest is split on
+    # item boundaries below this size.
+    max_message_chars: 3500
+    # A one-line gist under each headline. Turn off for a pure headline list.
+    include_summaries: true
+    summary_chars: 170
+  email:
+    enabled: true
+    subject_template: "BFSI & Life Insurance Daily — {date}"
+    smtp_host: smtp.gmail.com
+    smtp_port: 465
+    use_ssl: true
+    summary_chars: 300

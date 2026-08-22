@@ -1,0 +1,151 @@
+# News sources for the daily digest. Every source is a public RSS/Atom feed —
+# no API keys, no scraping, no logins.
+#
+# Fields
+#   id            stable slug, used in the seen-store and in per-source caps
+#   name          shown as the attribution on each item
+#   url           the feed
+#   weight        relevance bonus added to every article from this source
+#                 (0 = neutral, 2-3 = a specialist BFSI desk)
+#   section_hint  nudges routing when the headline alone is ambiguous
+#   enabled       set false to mute a source without deleting it
+#
+# Before trusting a new source, run:  python -m bot check-sources
+# It fetches every feed and reports HTTP status, item count and freshness, so
+# you find a moved or dead feed yourself rather than through a thin digest.
+
+sources:
+  # ---------------------------------------------------------------- specialist
+  - id: et-bfsi-top
+    name: ET BFSI
+    url: https://bfsi.economictimes.indiatimes.com/rss/topstories
+    weight: 2.0
+    enabled: true
+
+  - id: et-bfsi-insurance
+    name: ET BFSI · Insurance
+    url: https://bfsi.economictimes.indiatimes.com/rss/insurance
+    weight: 3.0
+    section_hint: life_insurance
+    enabled: true
+
+  - id: et-bfsi-policy
+    name: ET BFSI · Policy
+    url: https://bfsi.economictimes.indiatimes.com/rss/policy
+    weight: 2.0
+    section_hint: regulation
+    enabled: true
+
+  - id: et-bfsi-banking
+    name: ET BFSI · Banking
+    url: https://bfsi.economictimes.indiatimes.com/rss/banking
+    weight: 2.0
+    section_hint: banking_nbfc
+    enabled: true
+
+  - id: et-bfsi-financial-services
+    name: ET BFSI · Financial Services
+    url: https://bfsi.economictimes.indiatimes.com/rss/financial-services
+    weight: 2.0
+    enabled: true
+
+  # ------------------------------------------------------------------ regulators
+  - id: rbi-press
+    name: RBI Press Releases
+    url: https://www.rbi.org.in/pressreleases_rss.xml
+    weight: 3.0
+    section_hint: regulation
+    enabled: true
+
+  - id: rbi-notifications
+    name: RBI Notifications
+    url: https://www.rbi.org.in/notifications_rss.xml
+    weight: 3.0
+    section_hint: regulation
+    enabled: true
+
+  # IRDAI publishes no feed of its own, so its circulars, orders and master
+  # directions reach the digest through the targeted news queries below.
+
+  # ------------------------------------------------------------ targeted queries
+  # Google News search feeds. These are how IRDAI actions, life-insurer results
+  # and Bima Sugam news arrive even when the specialist desks are slow. Retune by
+  # editing the q= parameter; keep hl/gl/ceid pointed at India.
+  - id: gnews-irdai
+    name: News · IRDAI
+    url: https://news.google.com/rss/search?q=IRDAI+OR+%22insurance+regulator%22+when:2d&hl=en-IN&gl=IN&ceid=IN:en
+    weight: 2.0
+    section_hint: regulation
+    enabled: true
+
+  - id: gnews-life-insurance
+    name: News · Life Insurance
+    url: https://news.google.com/rss/search?q=%22life+insurance%22+India+when:2d&hl=en-IN&gl=IN&ceid=IN:en
+    weight: 2.0
+    section_hint: life_insurance
+    enabled: true
+
+  - id: gnews-life-insurers
+    name: News · Life Insurers
+    url: https://news.google.com/rss/search?q=(LIC+OR+%22HDFC+Life%22+OR+%22SBI+Life%22+OR+%22ICICI+Prudential+Life%22+OR+%22Max+Life%22+OR+%22Bajaj+Allianz+Life%22)+when:2d&hl=en-IN&gl=IN&ceid=IN:en
+    weight: 1.0
+    section_hint: corporate
+    enabled: true
+
+  - id: gnews-bfsi
+    name: News · BFSI
+    url: https://news.google.com/rss/search?q=BFSI+OR+%22banking+financial+services+and+insurance%22+when:2d&hl=en-IN&gl=IN&ceid=IN:en
+    weight: 1.0
+    enabled: true
+
+  - id: gnews-insurtech
+    name: News · InsurTech
+    url: https://news.google.com/rss/search?q=insurtech+OR+%22insurance+technology%22+India+when:3d&hl=en-IN&gl=IN&ceid=IN:en
+    weight: 1.0
+    section_hint: technology
+    enabled: true
+
+  # --------------------------------------------------------- general business
+  # Broad desks. Weighted at or near zero: a story from here has to earn its
+  # place on keywords alone, which is what keeps cricket and cinema out of a
+  # BFSI brief.
+  - id: bs-finance
+    name: Business Standard · Finance
+    url: https://www.business-standard.com/rss/finance-103.rss
+    weight: 0.0
+    enabled: true
+
+  - id: bl-money-banking
+    name: BusinessLine · Money & Banking
+    url: https://www.thehindubusinessline.com/money-and-banking/feeder/default.rss
+    weight: 1.0
+    section_hint: banking_nbfc
+    enabled: true
+
+  - id: mint-money
+    name: Mint · Money
+    url: https://www.livemint.com/rss/money
+    weight: 0.0
+    enabled: true
+
+  - id: mc-business
+    name: Moneycontrol · Business
+    url: https://www.moneycontrol.com/rss/business.xml
+    weight: 0.0
+    enabled: true
+
+  - id: fe-insurance
+    name: Financial Express · Insurance
+    url: https://www.financialexpress.com/about/insurance/feed/
+    weight: 2.0
+    section_hint: life_insurance
+    enabled: true
+
+  # ------------------------------------------------------------------- global
+  # Off by default — switch on for an international view alongside the India
+  # brief. Expect the digest to roughly double in length.
+  - id: gnews-global-insurance
+    name: News · Global Insurance
+    url: https://news.google.com/rss/search?q=%22life+insurance%22+OR+reinsurance+(regulation+OR+results)+when:2d&hl=en-US&gl=US&ceid=US:en
+    weight: 0.0
+    enabled: false
