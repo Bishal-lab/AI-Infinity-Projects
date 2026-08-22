@@ -10,42 +10,26 @@
 #   section_hint  nudges routing when the headline alone is ambiguous
 #   enabled       set false to mute a source without deleting it
 #
-# Before trusting a new source, run:  python -m bot check-sources
-# It fetches every feed and reports HTTP status, item count and freshness, so
-# you find a moved or dead feed yourself rather than through a thin digest.
+# Every URL below was verified against a live network on 22 Aug 2026 and was
+# returning fresh items. Publishers do move feeds — re-check with:
+#     python -m bot check-sources
+# or, on GitHub, Actions → BFSI digest → Run workflow → mode `check-sources`.
 
 sources:
   # ---------------------------------------------------------------- specialist
+  # ET BFSI publishes exactly two working feeds. Its per-section URLs
+  # (/rss/insurance, /rss/banking, /rss/policy, /rss/financial-services) return
+  # a valid but permanently empty RSS shell, so they are not listed here —
+  # between them these two carry the same desk's output anyway.
   - id: et-bfsi-top
     name: ET BFSI
     url: https://bfsi.economictimes.indiatimes.com/rss/topstories
     weight: 2.0
     enabled: true
 
-  - id: et-bfsi-insurance
-    name: ET BFSI · Insurance
-    url: https://bfsi.economictimes.indiatimes.com/rss/insurance
-    weight: 3.0
-    section_hint: life_insurance
-    enabled: true
-
-  - id: et-bfsi-policy
-    name: ET BFSI · Policy
-    url: https://bfsi.economictimes.indiatimes.com/rss/policy
-    weight: 2.0
-    section_hint: regulation
-    enabled: true
-
-  - id: et-bfsi-banking
-    name: ET BFSI · Banking
-    url: https://bfsi.economictimes.indiatimes.com/rss/banking
-    weight: 2.0
-    section_hint: banking_nbfc
-    enabled: true
-
-  - id: et-bfsi-financial-services
-    name: ET BFSI · Financial Services
-    url: https://bfsi.economictimes.indiatimes.com/rss/financial-services
+  - id: et-bfsi-recent
+    name: ET BFSI · Latest
+    url: https://bfsi.economictimes.indiatimes.com/rss/recentstories
     weight: 2.0
     enabled: true
 
@@ -57,6 +41,8 @@ sources:
     section_hint: regulation
     enabled: true
 
+  # Genuinely low-volume: RBI can go several days without a notification, so
+  # `check-sources` flagging this one as stale is normal, not a fault.
   - id: rbi-notifications
     name: RBI Notifications
     url: https://www.rbi.org.in/notifications_rss.xml
@@ -68,9 +54,12 @@ sources:
   # directions reach the digest through the targeted news queries below.
 
   # ------------------------------------------------------------ targeted queries
-  # Google News search feeds. These are how IRDAI actions, life-insurer results
-  # and Bima Sugam news arrive even when the specialist desks are slow. Retune by
-  # editing the q= parameter; keep hl/gl/ceid pointed at India.
+  # Google News search feeds — the backbone of this list. They carry the most
+  # volume, and they are also how stories from publishers that block direct feed
+  # access (Business Standard, Financial Express) still reach the brief, with
+  # the originating outlet named in the item's <source> element.
+  #
+  # Retune by editing the q= parameter; keep hl/gl/ceid pointed at India.
   - id: gnews-irdai
     name: News · IRDAI
     url: https://news.google.com/rss/search?q=IRDAI+OR+%22insurance+regulator%22+when:2d&hl=en-IN&gl=IN&ceid=IN:en
@@ -109,12 +98,6 @@ sources:
   # Broad desks. Weighted at or near zero: a story from here has to earn its
   # place on keywords alone, which is what keeps cricket and cinema out of a
   # BFSI brief.
-  - id: bs-finance
-    name: Business Standard · Finance
-    url: https://www.business-standard.com/rss/finance-103.rss
-    weight: 0.0
-    enabled: true
-
   - id: bl-money-banking
     name: BusinessLine · Money & Banking
     url: https://www.thehindubusinessline.com/money-and-banking/feeder/default.rss
@@ -128,18 +111,12 @@ sources:
     weight: 0.0
     enabled: true
 
-  - id: mc-business
-    name: Moneycontrol · Business
-    url: https://www.moneycontrol.com/rss/business.xml
-    weight: 0.0
-    enabled: true
-
-  - id: fe-insurance
-    name: Financial Express · Insurance
-    url: https://www.financialexpress.com/about/insurance/feed/
-    weight: 2.0
-    section_hint: life_insurance
-    enabled: true
+  # Deliberately absent, and why — so nobody re-adds them expecting them to work:
+  #   business-standard.com  HTTP 403 to any non-browser client
+  #   financialexpress.com   HTTP 403 to any non-browser client
+  #   moneycontrol.com       feeds parse, but abandoned: latestnews.xml last
+  #                          published Apr 2023, MCtopnews.xml Oct 2016
+  # All three are still covered indirectly through the news queries above.
 
   # ------------------------------------------------------------------- global
   # Off by default — switch on for an international view alongside the India

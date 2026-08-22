@@ -30,7 +30,7 @@ Friday, 22 August 2026 · 08:00 IST
 1. Bank credit growth slows to 11% as deposit growth lags
    BusinessLine · 07:05
 
-Window 21 Aug 06:00 – 22 Aug 08:00 (IST) · 17/17 sources responded
+Window 21 Aug 06:00 – 22 Aug 08:00 (IST) · 11/11 sources responded
 ```
 
 ---
@@ -55,8 +55,8 @@ Window 21 Aug 06:00 – 22 Aug 08:00 (IST) · 17/17 sources responded
 
 Each run:
 
-1. **Fetches** every enabled feed in `config/sources.yaml`, concurrently, with
-   retries. A dead feed is reported, not fatal.
+1. **Fetches** every enabled feed in `config/sources.yaml` (11 of them),
+   concurrently, with retries. A dead feed is reported, not fatal.
 2. **Cleans** each item: strips markup, parses whichever of the three date
    formats the feed used, removes campaign tracking from URLs, and drops the
    "` - Publisher`" suffix that search feeds append to headlines.
@@ -318,9 +318,14 @@ shows up here rather than at 08:00.
 
 ## Known limits
 
-- **Feeds are only as reliable as their publishers.** URLs in `sources.yaml`
-  were correct when written; run `check-sources` on first use, and occasionally
-  after, to catch any that have moved.
+- **Feeds are only as reliable as their publishers.** Every URL in
+  `sources.yaml` was verified live on 22 Aug 2026, but publishers move and
+  abandon feeds — three had to be dropped during setup for exactly that reason
+  (see the comments in `sources.yaml`). Re-run `check-sources` occasionally.
+- **Two publishers block automated clients outright** (Business Standard,
+  Financial Express, both HTTP 403). Their stories still reach the brief through
+  the Google News queries, attributed to them. Do not "fix" this by spoofing a
+  browser User-Agent — the 403 is the publisher's stated position.
 - **Relevance is keyword-based**, not a language model. It is transparent,
   free and fast, and `preview --explain` shows its reasoning — but it will
   occasionally keep a story you would not have, or miss one phrased unusually.

@@ -12,7 +12,7 @@ from bot.model import Article
 from bot.relevance import KeywordMatcher, Scorer
 
 
-def article(title: str, summary: str = "", source: str = "bs-finance") -> Article:
+def article(title: str, summary: str = "", source: str = "mint-money") -> Article:
     return Article(
         source_id=source, source_name=source, title=title,
         url="https://example.test/story", summary=summary,
@@ -91,13 +91,15 @@ def test_a_strong_keyword_is_its_own_proof_of_domain(scorer):
 
 
 def test_a_specialist_desk_bypasses_the_domain_gate(scorer):
-    """Everything ET BFSI Insurance prints is BFSI, even when the headline is
-    written in language the keyword lists do not cover."""
-    verdict = scorer.score(
-        article("Bima Sugam onboarding gathers pace", "Rollout continues.",
-                source="et-bfsi-insurance")
-    )
-    assert verdict.accepted
+    """Everything a BFSI desk prints is BFSI, even when the headline is written
+    in language the keyword lists barely cover. The same words from a general
+    desk have not earned their place — that contrast is the whole point of the
+    bypass, so both halves are asserted here."""
+    headline = "Mortality tables under review"
+    assert scorer.score(article(headline, source="et-bfsi-top")).accepted
+    passed_over = scorer.score(article(headline, source="mint-money"))
+    assert not passed_over.accepted
+    assert passed_over.reason == "outside the BFSI domain"
 
 
 def test_a_headline_hit_counts_for_more_than_a_summary_hit(scorer):
@@ -123,7 +125,7 @@ def test_banking_and_macro_stories_route_to_their_own_sections(scorer):
 def test_a_source_hint_breaks_a_tie_towards_its_own_section(scorer):
     plain = scorer.score(article("Insurance sector sees steady premium growth"))
     hinted = scorer.score(
-        article("Insurance sector sees steady premium growth", source="et-bfsi-insurance")
+        article("Insurance sector sees steady premium growth", source="gnews-life-insurance")
     )
     assert hinted.score > plain.score
 
