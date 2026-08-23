@@ -61,6 +61,37 @@ exclude:
   - match preview
   - live score
 
+  # Quote and ticker pages, not journalism. A search feed indexes them as
+  # articles, and their headlines are dense with the company names the
+  # taxonomy is looking for, so nothing else keeps them out. Deliberately
+  # narrow: a real story about a share price moving ("HDFC Life shares jump
+  # 5% after results") says nothing about a live NSE feed, so it survives.
+  - live NSE
+  - live BSE
+  - stock quote
+  - share price target
+
+  # Sports sponsorship. `cricket` and `IPL` already sit above, but a title-
+  # rights story names the board, not the sport — and an insurer's name in the
+  # headline is enough to carry it into the brief otherwise.
+  - BCCI
+  - title rights
+
+  # A Mysore road junction named after the insurer. Of a piece with the ticker
+  # below: `LIC` is three letters that mean the Life Insurance Corporation in
+  # almost every Indian headline and something else entirely in a handful, and
+  # an exclude list can only ever patch those one at a time. See the note in
+  # docs/tuning.md on why the general fix is a change to how search-feed
+  # sources open the domain gate, not more entries here.
+  - LIC Circle
+
+  # A foreign exchange ticker prefix in the headline. This is an India brief,
+  # and three-letter tickers collide badly with Indian acronyms — ASX:LIC is
+  # an Australian property developer, and it reached a life-insurance brief
+  # on the strength of the letters LIC alone. Scope decision, not a universal
+  # truth: turning on the global source in sources.yaml means revisiting it.
+  - ASX
+
 # The article must touch the BFSI world somewhere. Broad on purpose — precision
 # comes from the section scores, this is only a floor.
 domain_gate:

@@ -82,6 +82,79 @@ def test_supporting_words_alone_do_not_open_the_domain_gate(scorer):
     assert verdict.reason == "outside the BFSI domain"
 
 
+def test_quote_pages_are_not_journalism(scorer):
+    """A search feed indexes a live ticker page as an article, and its headline
+    is dense with exactly the company names the taxonomy hunts for — so nothing
+    but an explicit exclusion keeps it out."""
+    verdict = scorer.score(
+        article("HDFC Life Insurance Share Price - Live NSE: HDFCLIFE Stock Price & Chart",
+                source="gnews-life-insurers")
+    )
+    assert not verdict.accepted
+    assert "excluded" in verdict.reason
+
+
+def test_a_real_share_price_story_still_gets_through(scorer):
+    """The quote-page rule has to be narrow enough to leave the news alone:
+    a story about a share price moving is a story."""
+    assert scorer.score(
+        article("HDFC Life shares jump 5% after strong Q1 results",
+                "Brokerages raised targets on the life insurer.", source="gnews-life-insurers")
+    ).accepted
+
+
+def test_a_foreign_ticker_colliding_with_an_indian_acronym_is_dropped(scorer):
+    """ASX:LIC is an Australian property developer. It reached a life-insurance
+    brief on the strength of the letters LIC alone, and no amount of keyword
+    tuning fixes a three-letter collision — only the exchange prefix does."""
+    verdict = scorer.score(
+        article("Lifestyle Communities (ASX:LIC) Outlook: Sales Recovery and Debt Reduction",
+                source="gnews-life-insurers")
+    )
+    assert not verdict.accepted
+    assert "excluded" in verdict.reason
+
+
+def test_the_indian_lic_is_untouched_by_that_rule(scorer):
+    """The collision fix must not cost us the actual Life Insurance Corporation,
+    which is the single most-named entity in this brief."""
+    assert scorer.score(
+        article("LIC ordered to pay Rs 70 lakh to nominee over technical claim rejection",
+                source="gnews-life-insurance")
+    ).accepted
+    assert scorer.score(
+        article("LIC first-year premium rises 12% in July", source="gnews-life-insurance")
+    ).accepted
+
+
+def test_sports_sponsorship_is_not_insurance_news(scorer):
+    """An insurer's name in a title-rights headline is enough to carry a cricket
+    story into the brief; the board is named, the sport often is not."""
+    verdict = scorer.score(
+        article("Google Gemini, Spinny and SBI Life in race for BCCI home season title rights",
+                source="gnews-life-insurers")
+    )
+    assert not verdict.accepted
+    assert "excluded" in verdict.reason
+
+
+def test_a_place_named_after_the_insurer_is_not_a_story(scorer):
+    """LIC Circle is a road junction in Mysore. The exclusion is a patch, not a
+    cure — see the structural note in docs/tuning.md."""
+    verdict = scorer.score(article("Traffic diverted at LIC Circle", source="gnews-life-insurance"))
+    assert not verdict.accepted
+
+
+def test_an_insurer_appointment_survives_the_sports_rule(scorer):
+    """The People section is exactly where a senior insurer hire belongs, and
+    the exclusions above must not reach it."""
+    assert scorer.score(
+        article("Aviva India appoints Harshit Agrawal as Head of Marketing",
+                "The life insurer said the appointment strengthens brand and customer engagement.",
+                source="gnews-life-insurers")
+    ).accepted
+
+
 def test_a_generic_corporate_event_does_not_prove_the_domain(scorer):
     """"IPO" and "appoints" happen in every industry. Before the corporate
     section stopped certifying the domain, this small-cap listing reached a
