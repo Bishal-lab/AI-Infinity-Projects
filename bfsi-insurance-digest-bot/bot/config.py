@@ -102,6 +102,11 @@ class Section:
     #: the industry ("HDFC Life", "IRDAI"); false for sections whose vocabulary
     #: names a kind of event that happens in every industry ("IPO", "appoints").
     certifies_domain: bool = True
+    #: Strong keywords too ambiguous to vouch for the domain on their own.
+    #: "LIC" is the Life Insurance Corporation in most Indian headlines and a
+    #: road junction or a foreign ticker in the rest, so it certifies only when
+    #: another keyword from the same section corroborates it.
+    ambiguous: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -262,6 +267,16 @@ def _parse_sections(raw: Mapping[str, Any], where: str) -> tuple[Section, ...]:
         if not strong and not supporting:
             raise ConfigError(f"{label}: section '{section_id}' has no keywords")
 
+        ambiguous = _as_str_list(entry.get("ambiguous"), "ambiguous", label)
+        # A typo here would silently do nothing, which is the worst outcome for
+        # a rule whose whole job is to suppress something.
+        unknown = [k for k in ambiguous if k not in strong]
+        if unknown:
+            raise ConfigError(
+                f"{label}: 'ambiguous' names {unknown!r}, which is not in this "
+                f"section's 'strong' list"
+            )
+
         sections.append(
             Section(
                 id=section_id,
@@ -273,6 +288,7 @@ def _parse_sections(raw: Mapping[str, Any], where: str) -> tuple[Section, ...]:
                 certifies_domain=_as_bool(
                     entry.get("certifies_domain", True), "certifies_domain", label
                 ),
+                ambiguous=ambiguous,
             )
         )
     return tuple(sections)

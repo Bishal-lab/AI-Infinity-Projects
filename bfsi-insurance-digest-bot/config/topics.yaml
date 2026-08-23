@@ -14,6 +14,11 @@
 #                   `certifies_domain: false`, so a story filed under them has
 #                   to prove the domain some other way. Without that, the word
 #                   "IPO" alone would admit any company on earth.
+#                   A section may also list some of its own strong keywords as
+#                   `ambiguous`: those score normally but certify the domain
+#                   only when another keyword from the same section corroborates
+#                   them. "LIC" is the Life Insurance Corporation beside
+#                   "nominee" or "premium", and a Mysore road junction alone.
 #   3. Sections     every section scores the article on its own keywords:
 #                     strong keyword     -> strong_weight
 #                     supporting keyword -> supporting_weight
@@ -77,20 +82,10 @@ exclude:
   - BCCI
   - title rights
 
-  # A Mysore road junction named after the insurer. Of a piece with the ticker
-  # below: `LIC` is three letters that mean the Life Insurance Corporation in
-  # almost every Indian headline and something else entirely in a handful, and
-  # an exclude list can only ever patch those one at a time. See the note in
-  # docs/tuning.md on why the general fix is a change to how search-feed
-  # sources open the domain gate, not more entries here.
-  - LIC Circle
-
-  # A foreign exchange ticker prefix in the headline. This is an India brief,
-  # and three-letter tickers collide badly with Indian acronyms — ASX:LIC is
-  # an Australian property developer, and it reached a life-insurance brief
-  # on the strength of the letters LIC alone. Scope decision, not a universal
-  # truth: turning on the global source in sources.yaml means revisiting it.
-  - ASX
+  # `LIC Circle` (a Mysore road junction) and `ASX` (a foreign ticker prefix)
+  # used to sit here. They are gone: `LIC` is now marked `ambiguous` on the
+  # life_insurance section, so it no longer opens the domain gate on its own,
+  # which drops both collisions without naming either of them.
 
 # The article must touch the BFSI world somewhere. Broad on purpose — precision
 # comes from the section scores, this is only a floor.
@@ -145,6 +140,14 @@ sections:
     # Nudged above the other sections: this is the brief's headline subject, so
     # a story that is both a bank story and a life story files under life.
     multiplier: 1.2
+    # `LIC` scores like any other strong keyword, but three letters cannot
+    # vouch for a story being BFSI on their own — they are the Life Insurance
+    # Corporation in most Indian headlines, a road junction in Mysore in one
+    # and an Australian ticker in another. It certifies the domain only when
+    # another keyword from this section corroborates it, which every real LIC
+    # story has ("nominee", "premium", "claim") and no collision does.
+    ambiguous:
+      - LIC
     strong:
       - life insurance
       - life insurer

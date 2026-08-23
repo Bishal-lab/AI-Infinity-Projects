@@ -59,18 +59,24 @@ sources:
   # access (Business Standard, Financial Express) still reach the brief, with
   # the originating outlet named in the item's <source> element.
   #
+  # Every one of these sits *below* `gate_bypass_weight` (2.0) on purpose. The
+  # bypass exists for curated desks, where an editor has already decided the
+  # story is BFSI. These are search queries: a query for `LIC` returns road
+  # junctions, so their results have to prove the domain on their own words.
+  # Raising any of them to 2.0 or above reopens that hole.
+  #
   # Retune by editing the q= parameter; keep hl/gl/ceid pointed at India.
   - id: gnews-irdai
     name: News · IRDAI
     url: https://news.google.com/rss/search?q=IRDAI+OR+%22insurance+regulator%22+when:2d&hl=en-IN&gl=IN&ceid=IN:en
-    weight: 2.0
+    weight: 1.5
     section_hint: regulation
     enabled: true
 
   - id: gnews-life-insurance
     name: News · Life Insurance
     url: https://news.google.com/rss/search?q=%22life+insurance%22+India+when:2d&hl=en-IN&gl=IN&ceid=IN:en
-    weight: 2.0
+    weight: 1.5
     section_hint: life_insurance
     enabled: true
 

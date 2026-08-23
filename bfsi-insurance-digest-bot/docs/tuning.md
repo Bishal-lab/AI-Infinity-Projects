@@ -34,6 +34,10 @@ guesswork.
    starts looking thin, either flip its `certifies_domain` back to `true`, or —
    better — add the specific term you are missing to `domain_gate`, which keeps
    the gate meaningful.
+
+   A section can also mark individual strong keywords `ambiguous`, meaning they
+   certify only with corroboration — see [Ambiguous
+   keywords](#ambiguous-keywords-and-why-they-are-not-an-exclude-entry) below.
 3. **Section scores.** Each section scores the story on its own keywords: a
    `strong` hit is worth `strong_weight` (3.0), a `supporting` hit
    `supporting_weight` (1.0), and a hit in the headline is worth
@@ -94,26 +98,43 @@ scoring cannot:
   *higher* than real news. Note how narrow these are: a genuine story ("HDFC
   Life shares jump 5% after results") never mentions a live NSE feed, so it
   still gets through.
-- **`ASX`, `LIC Circle`, `BCCI`.** Three-letter collisions. `LIC` means the
-  Life Insurance Corporation in almost every Indian headline — and an
-  Australian property developer's ticker in one, a Mysore road junction in
-  another, a cricket sponsorship in a third. No keyword tuning fixes that,
-  because the term itself is genuinely right nearly all the time.
+- **`BCCI`, `title rights`.** Sports sponsorship. `cricket` and `IPL` already
+  sit above, but a title-rights headline names the board, not the sport, and an
+  insurer's name in it is otherwise enough to carry it in.
 
-### Why those last ones are patches, not a cure
+### Ambiguous keywords, and why they are not an exclude entry
 
-Each new collision costs another exclude entry, which does not scale. The
-structural cause is that the Google News sources carry `weight: 2.0`, equal to
-`gate_bypass_weight` — so **everything they return skips the domain gate**,
-exactly as if they were a curated BFSI desk. They are not: they are search
-queries, and a query for `LIC` returns road junctions.
+`LIC` means the Life Insurance Corporation in almost every Indian headline —
+and an Australian property developer's ASX ticker in one, a Mysore road
+junction in another. Excluding each collision as it appears does not scale, so
+`LIC` is listed under `ambiguous` on the life_insurance section instead:
 
-The real fix is to drop those sources below `gate_bypass_weight` (say 1.5) so
-their results must prove the domain on their own words, and to mark genuinely
-ambiguous keywords like `LIC` as scoring-but-not-certifying. That is a change
-with real blast radius — those feeds carry most of the volume — so it wants its
-own branch and a careful before/after on a live `preview`, not a quick edit.
-Until then, expect the occasional collision and add an exclude for it.
+```yaml
+  - id: life_insurance
+    ambiguous:
+      - LIC
+```
+
+An ambiguous keyword scores exactly like any other strong keyword. What it
+cannot do is open the domain gate by itself — it needs corroboration from
+another keyword in the same section. That is precisely what separates the real
+stories from the collisions:
+
+| Headline | Other life-insurance words | Verdict |
+| --- | --- | --- |
+| LIC ordered to pay Rs 70 lakh to **nominee** | `nominee` | in |
+| LIC **first-year premium** rises 12% | `first year premium`, `premium` | in |
+| Traffic diverted at LIC Circle | none | out |
+| Lifestyle Communities (ASX:LIC) Outlook | none | out |
+
+Anything listed in `ambiguous` must also appear in that section's `strong`
+list; the loader rejects a typo rather than silently ignoring it.
+
+This works only because the Google News sources sit **below**
+`gate_bypass_weight`. The bypass exists for curated desks, where an editor has
+already decided a story is BFSI; a search query has decided nothing, and a
+query for `LIC` returns road junctions. Raising any `gnews-` source to 2.0 or
+above reopens the hole — there is a test that fails if you do.
 
 ## Adding a source
 

@@ -313,7 +313,7 @@ pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-156 tests, all offline: feed parsing runs against fixtures in
+159 tests, all offline: feed parsing runs against fixtures in
 `tests/fixtures/`, delivery is faked, and no test opens a socket. The suite
 covers the shipped `config/` too, so an edit to the taxonomy that breaks routing
 shows up here rather than at 08:00.

@@ -103,28 +103,51 @@ def test_a_real_share_price_story_still_gets_through(scorer):
     ).accepted
 
 
-def test_a_foreign_ticker_colliding_with_an_indian_acronym_is_dropped(scorer):
-    """ASX:LIC is an Australian property developer. It reached a life-insurance
-    brief on the strength of the letters LIC alone, and no amount of keyword
-    tuning fixes a three-letter collision — only the exchange prefix does."""
-    verdict = scorer.score(
-        article("Lifestyle Communities (ASX:LIC) Outlook: Sales Recovery and Debt Reduction",
-                source="gnews-life-insurers")
-    )
-    assert not verdict.accepted
-    assert "excluded" in verdict.reason
+def test_an_ambiguous_keyword_alone_does_not_prove_the_domain(scorer):
+    """Both of these reached a life-insurance brief on the letters LIC alone —
+    one an Australian property developer's ASX ticker, one a road junction in
+    Mysore. Neither is named anywhere in the config: `LIC` is marked ambiguous,
+    so it needs corroboration before it opens the gate."""
+    for headline in [
+        "Lifestyle Communities (ASX:LIC) Outlook: Sales Recovery and Debt Reduction",
+        "Traffic diverted at LIC Circle",
+    ]:
+        verdict = scorer.score(article(headline, source="gnews-life-insurers"))
+        assert not verdict.accepted, headline
+        # Structural, not a blocklist entry — that distinction is the point.
+        assert verdict.reason == "outside the BFSI domain", headline
 
 
-def test_the_indian_lic_is_untouched_by_that_rule(scorer):
-    """The collision fix must not cost us the actual Life Insurance Corporation,
-    which is the single most-named entity in this brief."""
-    assert scorer.score(
-        article("LIC ordered to pay Rs 70 lakh to nominee over technical claim rejection",
-                source="gnews-life-insurance")
-    ).accepted
-    assert scorer.score(
-        article("LIC first-year premium rises 12% in July", source="gnews-life-insurance")
-    ).accepted
+def test_one_corroborating_word_is_enough_to_admit_it(scorer):
+    """Every real LIC story carries another life-insurance word; that is exactly
+    what separates them from the collisions above."""
+    for headline in [
+        "LIC ordered to pay Rs 70 lakh to nominee over technical claim rejection",
+        "LIC first-year premium rises 12% in July",
+        "LIC settles death claim in record time",
+    ]:
+        assert scorer.score(article(headline, source="gnews-life-insurance")).accepted, headline
+
+
+def test_search_feeds_must_not_bypass_the_domain_gate(config):
+    """The bypass is for curated desks, where an editor already decided the
+    story is BFSI. A Google News query is not that — a query for LIC returns
+    road junctions — so every search source has to sit below the threshold.
+    Raising one back to 2.0 reopens the hole this test exists to guard."""
+    bypass = config.scoring.gate_bypass_weight
+    for source in config.sources:
+        if source.id.startswith("gnews-"):
+            assert source.weight < bypass, f"{source.id} would skip the domain gate"
+
+
+def test_a_phrase_matches_across_a_hyphen(scorer):
+    """Feeds write "first-year premium" where the taxonomy says "first year
+    premium"; before this the phrase silently failed to match."""
+    from bot.relevance import KeywordMatcher
+
+    matcher = KeywordMatcher(["first year premium"])
+    assert matcher.find("first-year premium rises") == {"first year premium"}
+    assert matcher.find("first year premium rises") == {"first year premium"}
 
 
 def test_sports_sponsorship_is_not_insurance_news(scorer):
@@ -136,13 +159,6 @@ def test_sports_sponsorship_is_not_insurance_news(scorer):
     )
     assert not verdict.accepted
     assert "excluded" in verdict.reason
-
-
-def test_a_place_named_after_the_insurer_is_not_a_story(scorer):
-    """LIC Circle is a road junction in Mysore. The exclusion is a patch, not a
-    cure — see the structural note in docs/tuning.md."""
-    verdict = scorer.score(article("Traffic diverted at LIC Circle", source="gnews-life-insurance"))
-    assert not verdict.accepted
 
 
 def test_an_insurer_appointment_survives_the_sports_rule(scorer):
