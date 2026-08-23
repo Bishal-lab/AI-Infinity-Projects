@@ -85,6 +85,36 @@ insurers"), as are flexible spacing and hyphens ("non-par" matches "non par").
 `exclude`. Be specific: `exclude` beats everything else, so a broad term there
 will silently remove stories you wanted.
 
+Two entries already there are worth understanding, because they solve problems
+scoring cannot:
+
+- **Quote pages.** `live NSE`, `live BSE`, `stock quote`, `share price target`.
+  A search feed indexes a live ticker page as an article, and its headline is
+  dense with exactly the company names the taxonomy hunts for — so it scores
+  *higher* than real news. Note how narrow these are: a genuine story ("HDFC
+  Life shares jump 5% after results") never mentions a live NSE feed, so it
+  still gets through.
+- **`ASX`, `LIC Circle`, `BCCI`.** Three-letter collisions. `LIC` means the
+  Life Insurance Corporation in almost every Indian headline — and an
+  Australian property developer's ticker in one, a Mysore road junction in
+  another, a cricket sponsorship in a third. No keyword tuning fixes that,
+  because the term itself is genuinely right nearly all the time.
+
+### Why those last ones are patches, not a cure
+
+Each new collision costs another exclude entry, which does not scale. The
+structural cause is that the Google News sources carry `weight: 2.0`, equal to
+`gate_bypass_weight` — so **everything they return skips the domain gate**,
+exactly as if they were a curated BFSI desk. They are not: they are search
+queries, and a query for `LIC` returns road junctions.
+
+The real fix is to drop those sources below `gate_bypass_weight` (say 1.5) so
+their results must prove the domain on their own words, and to mark genuinely
+ambiguous keywords like `LIC` as scoring-but-not-certifying. That is a change
+with real blast radius — those feeds carry most of the volume — so it wants its
+own branch and a careful before/after on a live `preview`, not a quick edit.
+Until then, expect the occasional collision and add an exclude for it.
+
 ## Adding a source
 
 Any public RSS or Atom feed works:
