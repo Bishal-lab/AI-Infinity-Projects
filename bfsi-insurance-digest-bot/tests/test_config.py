@@ -82,6 +82,31 @@ def test_missing_optional_settings_fall_back_to_defaults(tmp_path):
     assert config.state.path.name == "seen.json"
 
 
+def test_the_ambiguous_list_is_checked_against_strong(tmp_path):
+    """A typo here would silently do nothing, which is the worst outcome for a
+    rule whose entire job is to suppress something."""
+    topics = TOPICS + (
+        "  - id: corporate\n"
+        "    title: Corporate\n"
+        "    strong: [LIC]\n"
+        "    ambiguous: [LICC]\n"
+    )
+    with pytest.raises(ConfigError, match="ambiguous"):
+        load_config(write_config(tmp_path / "c", topics=topics))
+
+
+def test_ambiguous_parses_and_defaults_to_empty(tmp_path):
+    topics = TOPICS + (
+        "  - id: corporate\n"
+        "    title: Corporate\n"
+        "    strong: [LIC, IPO]\n"
+        "    ambiguous: [LIC]\n"
+    )
+    config = load_config(write_config(tmp_path / "c", topics=topics))
+    assert config.section("corporate").ambiguous == ("LIC",)
+    assert config.section("life_insurance").ambiguous == ()
+
+
 def test_certifies_domain_defaults_to_true_and_can_be_turned_off(tmp_path):
     topics = TOPICS + (
         "  - id: corporate\n"

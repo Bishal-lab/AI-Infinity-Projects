@@ -35,7 +35,11 @@ def _keyword_pattern(keyword: str) -> str:
     else:
         stem, suffix = text, ""
     escaped = re.escape(stem)
-    escaped = re.sub(r"(\\?\s)+", r"[\\s\\u00a0]+", escaped)
+    # A space in a keyword also matches a hyphen: feeds write "first-year
+    # premium" where the taxonomy says "first year premium".
+    # The hyphen sits last in the class so it stays literal — and so the
+    # hyphen rule on the next line cannot reach inside what this one wrote.
+    escaped = re.sub(r"(\\?\s)+", r"[\\s\\u00a0-]+", escaped)
     escaped = escaped.replace(r"\-", r"[-–—\s]")
     return escaped + suffix
 
@@ -132,6 +136,10 @@ class _SectionMatcher:
     strong: KeywordMatcher
     supporting: KeywordMatcher
 
+    @property
+    def ambiguous(self) -> frozenset[str]:
+        return frozenset(self.section.ambiguous)
+
 
 class Scorer:
     """Applies the topic rules to articles."""
@@ -185,14 +193,22 @@ class Scorer:
             strong_hits = self._contributions(
                 entry.strong, title, summary, self.scoring.strong_weight
             )
-            # Only a section whose vocabulary names the industry can vouch for a
-            # story being BFSI. "IPO" and "appoints" happen everywhere, so the
-            # corporate-style sections do not open the gate on their own.
-            if strong_hits and entry.section.certifies_domain:
-                matched_strong = True
-            contributions = strong_hits + self._contributions(
+            supporting_hits = self._contributions(
                 entry.supporting, title, summary, self.scoring.supporting_weight
             )
+            # Only a section whose vocabulary names the industry can vouch for a
+            # story being BFSI. "IPO" and "appoints" happen everywhere, so the
+            # corporate-style sections do not open the gate on their own — and
+            # within a section that does, a keyword listed as `ambiguous` needs
+            # corroboration from some other hit before it counts. "LIC" beside
+            # "nominee" is the insurer; "LIC" alone is a road junction.
+            if entry.section.certifies_domain and strong_hits:
+                ambiguous = entry.ambiguous
+                corroborating = [k for k, _ in strong_hits if k not in ambiguous]
+                corroborating += [k for k, _ in supporting_hits]
+                if corroborating:
+                    matched_strong = True
+            contributions = strong_hits + supporting_hits
             if not contributions and hint != entry.section.id:
                 continue
 
