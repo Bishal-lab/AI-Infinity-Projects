@@ -156,10 +156,16 @@ Then run the workflow once by hand (**Actions → BFSI digest → Run workflow**
 choosing `test-delivery` and then `run`, to confirm it works before you rely on
 the schedule.
 
-The cron line is `30 2 * * *` — **02:30 UTC, which is 08:00 IST**. Actions cron
-is always UTC and has no timezone setting; the half-hour offset also keeps the
-job out of the on-the-hour queue, where scheduled runs routinely start ten to
-fifteen minutes late.
+The cron line is `30 1 * * *` — 01:30 UTC, which is **07:00 IST, an hour before
+the brief is wanted**. Actions cron is always UTC and has no timezone setting,
+and it does not fire on the minute: both scheduled runs measured on this repo
+started ~60 minutes late (asked 02:30 UTC, started 03:29 and 03:30). Asking an
+hour early puts 08:00 IST inside the delivery window instead of at its floor —
+a punctual morning arrives at 07:00, a typical one at 08:00.
+
+That hour of lead time is an Actions quirk, not arithmetic: 08:00 IST really is
+02:30 UTC, and a scheduler that fires on time (cron or a systemd timer on your
+own machine, below) should use `30 2 * * *`.
 
 Two Actions-specific things to know:
 
