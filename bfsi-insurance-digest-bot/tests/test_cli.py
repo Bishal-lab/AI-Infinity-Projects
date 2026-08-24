@@ -162,3 +162,92 @@ def test_env_file_loads_values_without_overriding_the_environment(tmp_path, monk
 
 def test_a_missing_env_file_is_not_an_error(tmp_path):
     assert load_env_file(tmp_path / "absent") == 0
+
+
+# ------------------------------------------------------- telegram-chats setup
+
+def _update(chat_id, kind="message", chat_type="private", date=100, **chat):
+    return {kind: {"date": date, "chat": {"id": chat_id, "type": chat_type, **chat}}}
+
+
+@pytest.fixture
+def telegram_api(monkeypatch, wired):
+    """Stand in for the Bot API, recording which methods were called."""
+    from bot.channels import telegram
+
+    calls, updates = [], []
+
+    def fake_call(method, payload, timeout):
+        calls.append(method)
+        if method == "getMe":
+            return {"username": "Edubfsi_bot", "first_name": "BFSI Brief"}
+        if method == "getUpdates":
+            return list(updates)
+        raise AssertionError(f"unexpected API call: {method}")
+
+    monkeypatch.setattr(telegram, "_call", fake_call)
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token")
+    return type("API", (), {"calls": calls, "updates": updates})()
+
+
+def test_telegram_chats_reports_the_id_and_who_it_belongs_to(telegram_api, capsys):
+    telegram_api.updates.append(_update(4242, first_name="Bishal", username="bishal"))
+
+    assert cli.main(["telegram-chats"]) == cli.EXIT_OK
+    out = capsys.readouterr().out
+    assert "4242" in out and "Bishal" in out and "@bishal" in out
+    assert "Set TELEGRAM_CHAT_ID to 4242" in out
+
+
+def test_the_chat_id_lookup_needs_only_the_token(telegram_api, monkeypatch, capsys):
+    """TELEGRAM_CHAT_ID is the thing being looked up, so requiring it would make
+    the command useless exactly when it is needed."""
+    monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
+    telegram_api.updates.append(_update(7))
+
+    assert cli.main(["telegram-chats"]) == cli.EXIT_OK
+    assert "getUpdates" in telegram_api.calls
+
+
+def test_an_empty_inbox_says_to_message_the_bot_first(telegram_api, capsys):
+    """A bot cannot open a conversation, so 'no chats' is the normal first
+    result, not a failure to explain away."""
+    assert cli.main(["telegram-chats"]) == cli.EXIT_DELIVERY_FAILED
+    out = capsys.readouterr().out
+    assert "https://t.me/Edubfsi_bot" in out
+    assert "webhook" in out and "24 hours" in out
+
+
+def test_a_missing_token_is_caught_before_the_network(monkeypatch, wired, capsys):
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.setattr(
+        "bot.channels.telegram._call",
+        lambda *a, **k: pytest.fail("should not have called the API"),
+    )
+    assert cli.main(["telegram-chats"]) == cli.EXIT_DELIVERY_FAILED
+    assert "BotFather" in capsys.readouterr().out
+
+
+def test_group_and_channel_chats_are_found_too(telegram_api, capsys):
+    """The bot may be added to a group instead — same id, different update."""
+    telegram_api.updates.extend([
+        _update(-100123, kind="channel_post", chat_type="channel", title="BFSI Desk", date=50),
+        _update(-200456, kind="my_chat_member", chat_type="group", title="Team", date=60),
+    ])
+    assert cli.main(["telegram-chats"]) == cli.EXIT_OK
+    out = capsys.readouterr().out
+    assert "-100123" in out and "BFSI Desk" in out
+    assert "-200456" in out and "Team" in out
+
+
+def test_the_newest_chat_is_recommended_and_repeats_collapse(telegram_api, capsys):
+    telegram_api.updates.extend([
+        _update(111, date=10, first_name="Old"),
+        _update(222, date=90, first_name="Newest"),
+        _update(111, date=20, first_name="Old"),
+    ])
+    assert cli.main(["telegram-chats"]) == cli.EXIT_OK
+    out = capsys.readouterr().out
+    assert "Set TELEGRAM_CHAT_ID to 222" in out
+    assert out.count("111") == 1
+    assert "separate them with commas" in out

@@ -18,6 +18,12 @@ workflow asks for `30 1 * * *` instead. See below.
 Already set up in `.github/workflows/bfsi-digest.yml`. Add the secrets listed in
 the main README and the schedule takes care of itself.
 
+Run it by hand from **Actions → BFSI digest → Run workflow**, which offers six
+modes: `run`, `dry-run`, `preview`, `check-sources`, `test-delivery` and
+`telegram-chats`. The last is a setup helper — with only `TELEGRAM_BOT_TOKEN`
+set it prints the chat ids the bot can see, so you can fill in
+`TELEGRAM_CHAT_ID` without ever handling the token yourself.
+
 Worth knowing:
 
 - **Scheduled workflows stop after 60 days** of no commits to the default

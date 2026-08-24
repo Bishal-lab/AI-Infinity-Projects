@@ -44,6 +44,7 @@ on:
           - preview         # build and print it into this job log, send nothing
           - check-sources   # fetch every feed and report on its health
           - test-delivery   # verify the Telegram and Gmail credentials
+          - telegram-chats  # print the chat ids the bot can see
 
 concurrency:
   group: bfsi-digest
@@ -113,6 +114,14 @@ jobs:
       - name: Verify the delivery credentials
         if: env.MODE == 'test-delivery'
         run: python -m bot test-delivery
+
+      # Setup only. A bot cannot message you first, so TELEGRAM_CHAT_ID does not
+      # exist until you message the bot — and then only Telegram knows it. This
+      # asks, using the token alone, and prints the ids here. The runner has the
+      # open network the lookup needs; a laptop behind a proxy often does not.
+      - name: Find the Telegram chat id
+        if: env.MODE == 'telegram-chats'
+        run: python -m bot telegram-chats
 
       - name: Save the seen-store
         # Runs even when delivery failed, so a retry does not re-send what did

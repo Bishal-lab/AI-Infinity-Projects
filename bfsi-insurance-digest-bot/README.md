@@ -108,15 +108,40 @@ the brief looks like before setting anything up.
    `TELEGRAM_BOT_TOKEN`.
 3. **Send your new bot a message.** A bot cannot start a conversation; until you
    write to it first, it has no permission to write to you.
-4. Open `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates` in a browser and
-   copy `result[0].message.chat.id`. That is `TELEGRAM_CHAT_ID`.
+4. With the token set, ask the bot who it can see:
 
-For a group: add the bot to the group, send any message there, and use the
-group's chat id from the same URL (it will be negative). Several destinations —
-separate the ids with commas.
+   ```bash
+   TELEGRAM_BOT_TOKEN=... python -m bot telegram-chats
+   ```
 
-`python -m bot test-delivery` confirms the token and resolves every chat id;
-add `--send` to receive a real test message.
+   ```
+   Bot @your_bot (Your Bot)
+
+            chat id  type       who
+   --------------------------------------------------------
+            12345678  private    Bishal (@bishal)
+   --------------------------------------------------------
+
+   Set TELEGRAM_CHAT_ID to 12345678
+   ```
+
+   This deliberately needs the token alone — the chat id is what it is looking
+   up. If it prints nothing, you have not completed step 3; send the bot a
+   message and run it again.
+
+For a group: add the bot to the group, send any message there, and run the same
+command — the group appears with a negative id. Several destinations: separate
+the ids with commas.
+
+The raw equivalent is `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates`,
+whose `result[0].message.chat.id` is the same number. Worth knowing when you
+want to see what Telegram actually returned.
+
+`python -m bot test-delivery` then confirms the token and resolves every chat
+id; add `--send` to receive a real test message.
+
+**On GitHub Actions**, where the token lives as a secret and you never see it,
+run the workflow with mode `telegram-chats` — same output, in the job log.
 
 ## Setting up Gmail
 
@@ -248,6 +273,7 @@ not, and the score and reason for each.
 | `python -m bot preview --html out/x.html` | write the HTML e-mail to a file |
 | `python -m bot check-sources` | fetch every feed; report status, item count, freshness |
 | `python -m bot test-delivery [--send]` | verify Telegram and Gmail credentials |
+| `python -m bot telegram-chats` | list the chats the bot can see, to find `TELEGRAM_CHAT_ID` |
 
 Global flags: `--config DIR`, `--env PATH`, `-v/--verbose`.
 
@@ -297,7 +323,13 @@ prints the error per feed; open the URL in a browser, find the publisher's
 current RSS link, and update `config/sources.yaml`.
 
 **Telegram: "chat not found".** You have not messaged the bot yet, or the chat
-id is wrong. Message the bot, reload `getUpdates`, copy the id again.
+id is wrong. Message the bot, then run `python -m bot telegram-chats` and copy
+the id it prints.
+
+**`telegram-chats` prints no chats.** Normal before you have written to the bot
+— it cannot start the conversation. If you have written to it: Telegram discards
+unread updates after 24 hours, and returns none at all while a webhook is set.
+A fresh message to the bot fixes the first case.
 
 **Telegram: "can't parse entities".** A headline contained markup the renderer
 did not escape. Please open an issue with the headline — everything is escaped
