@@ -134,3 +134,42 @@ def test_an_empty_brief_is_mailed_on_the_proof_of_life_day(config):
 def test_a_brief_with_openings_always_goes_out(config, source):
     digest = build_digest(config, now=NOW, results=[make_result(source, make_posting())])
     assert should_send(digest, config)[0]
+
+
+# ------------------------------------------------ the check-sources exit code
+
+def _check_sources(config, monkeypatch, results, all_sources=True):
+    import argparse
+
+    import radar.cli as cli
+
+    monkeypatch.setattr(cli, "fetch_all", lambda *a, **k: results)
+    monkeypatch.setattr(cli, "_load", lambda args: config)
+    return cli.cmd_check_sources(
+        argparse.Namespace(all=all_sources, config=None, env=None, verbose=False)
+    )
+
+
+def test_check_sources_is_green_when_every_live_source_answers(config, source, monkeypatch):
+    assert _check_sources(config, monkeypatch, [make_result(source, make_posting())]) == 0
+
+
+def test_check_sources_is_red_when_a_live_source_fails(config, source, monkeypatch):
+    results = [FetchResult(source=source, error="HTTP 404")]
+    assert _check_sources(config, monkeypatch, results) == 1
+
+
+def test_a_source_disabled_in_config_does_not_hold_check_sources_red(
+    config, source, monkeypatch
+):
+    """`--all` shows disabled sources so their state stays visible. An employer
+    switched off precisely because it is known broken must not keep the command
+    red for ever, or red stops meaning anything."""
+    disabled = replace(source, enabled=False)
+    results = [FetchResult(source=disabled, error="HTTP 422")]
+    assert _check_sources(config, monkeypatch, results) == 0
+
+
+def test_a_keyless_source_does_not_hold_check_sources_red(config, source, monkeypatch):
+    results = [FetchResult(source=source, skipped="no CAREERJET_AFFID set")]
+    assert _check_sources(config, monkeypatch, results) == 0

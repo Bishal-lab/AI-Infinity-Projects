@@ -218,6 +218,7 @@ def cmd_check_sources(args: argparse.Namespace) -> int:
     now = datetime.now(timezone.utc)
     zone = local_zone(config.radar.timezone)
     failed = 0
+    failed_in_service = 0
     off = 0
 
     print(f"{'':2} {'source':<24} {'kind':<11} {'jobs':>5} {'newest':>14}  detail")
@@ -230,10 +231,16 @@ def cmd_check_sources(args: argparse.Namespace) -> int:
             continue
         if not result.ok:
             failed += 1
-            print(
-                f"{'✗':2} {source.id:<24} {source.kind:<11} {'—':>5} {'—':>14}  "
-                f"{truncate(result.error or '', 46)}"
-            )
+            # A source that is switched off in config is a diagnostic line, not
+            # a fault: `--all` exists to show them, and a known-broken employer
+            # left disabled on purpose must not hold this command red forever.
+            # Red here has to keep meaning "something needs fixing".
+            if source.enabled:
+                failed_in_service += 1
+            note = truncate(result.error or "", 46)
+            if not source.enabled:
+                note += " · disabled in config"
+            print(f"{'✗':2} {source.id:<24} {source.kind:<11} {'—':>5} {'—':>14}  {note}")
             continue
 
         from .normalize import parse_date
@@ -252,12 +259,18 @@ def cmd_check_sources(args: argparse.Namespace) -> int:
         )
 
     print("-" * 92)
-    print(f"{len(results) - failed - off}/{len(results)} sources healthy, {off} off for want of a key")
-    if failed:
+    summary = (
+        f"{len(results) - failed - off}/{len(results)} sources healthy, "
+        f"{off} off for want of a key"
+    )
+    if failed > failed_in_service:
+        summary += f", {failed - failed_in_service} failing but disabled in config"
+    print(summary)
+    if failed_in_service:
         print("\nA failing source is usually a wrong URL. For Workday, open the employer's")
         print("careers site in a browser, copy the address, and paste it into sources.yaml")
         print("as-is — the adapter works the rest out. Set `enabled: false` to mute one.")
-    return EXIT_OK if failed == 0 else EXIT_DELIVERY_FAILED
+    return EXIT_OK if failed_in_service == 0 else EXIT_DELIVERY_FAILED
 
 
 # --------------------------------------------------------------------------- #
