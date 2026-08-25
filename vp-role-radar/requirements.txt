@@ -1,0 +1,9 @@
+# Runtime dependencies. Deliberately short, for the same reason as the digest
+# bot next door: this job has to install cleanly on a schedule for years with
+# nobody watching. Feed parsing, JSON, e-mail and dates are standard library.
+requests==2.32.3
+PyYAML==6.0.2
+
+# Timezone database. Present on most Linux images already, but the radar is
+# defined in IST and must not fall back to UTC on a slim container.
+tzdata==2024.2

@@ -1,0 +1,432 @@
+# Who the radar is looking for, and what "a good match" means.
+#
+# This is the file to tune first. Everything about fit — which titles qualify,
+# which functions count, where the roles may be — is here, and nothing about it
+# is a secret.
+#
+# How an opening is scored
+#   1. Exclusions   a match in `exclude.title` (checked against the job title)
+#                   or `exclude.anywhere` (title and description) drops the
+#                   opening outright. The split matters: a genuine VP – Key
+#                   Accounts posting routinely mentions "underwriting" in its
+#                   responsibilities, and rejecting on that would be wrong.
+#   2. Gates        the opening must clear three floors, or it is dropped:
+#                     seniority  a VP-grade or AVP-grade marker in the title
+#                     function   at least one `function.strong` keyword
+#                     geography  a location inside one of the regions below
+#                   Together these are what keep a Senior Manager role, a
+#                   VP-Actuarial role and a VP role in Frankfurt all out.
+#   3. Dimensions   each dimension scores 0..1 on its keywords and contributes
+#                   its `points` share, so the total is a 0..100 fit score.
+#                   A keyword hit in the job title counts `title_multiplier`
+#                   times one in the description, each distinct keyword counts
+#                   once, and `max_keywords_counted` caps how many can pile up.
+#   4. Experience   an advertised band whose upper end is below
+#                   `experience.floor_years` is a reject whatever the title
+#                   says — "Key Account Manager, 2-5 yrs" is not this search.
+#   5. Tier         the score falls into strong / possible / stretch, and
+#                   anything under `settings.yaml: radar.min_fit` is not shown.
+#
+# Matching is case-insensitive and on word boundaries, so "VP" does not match
+# "VPN" and "banca" does not match "bancassurance" twice. Multi-word entries
+# match as phrases with flexible whitespace.
+
+candidate:
+  name: Bishal Das
+  based_in: Gurgaon, India
+  current_role: AVP — Enterprise COE (Digital Transformation), Axis Max Life Insurance
+  experience_years: 23
+  # Shown in the digest footer, so the brief always states what it was looking
+  # for. Keep it to one line.
+  looking_for: >-
+    Vice President & equivalent key account management leadership in Life
+    Insurance across India, the GCC and Asia
+
+scoring:
+  # A hit in the job title is worth this many hits in the description. Titles
+  # are written deliberately; description text is boilerplate as often as not.
+  title_multiplier: 2.0
+  max_keywords_counted: 10
+  tiers:
+    strong: 70
+    possible: 55
+    stretch: 45
+
+experience:
+  # Reject a posting that advertises a band topping out below this. Set from
+  # the candidate's 23 years: a role capped at 8 years is not a mis-scored
+  # match, it is a different job.
+  floor_years: 10
+  # An opening naming this band or wider is treated as squarely in range.
+  ideal_min: 15
+  ideal_max: 25
+
+# ---------------------------------------------------------------- exclusions
+
+exclude:
+  # Matched against the job title only. These are senior roles in a different
+  # function — a VP the candidate is not.
+  title:
+    - actuarial
+    - actuary
+    - underwriting
+    - underwriter
+    - claims
+    - risk management
+    - information technology
+    - software
+    - engineering
+    - engineer
+    - developer
+    - architect
+    - data science
+    - data scientist
+    - cyber
+    - human resources
+    - talent acquisition
+    - recruitment
+    - learning and development
+    - internal audit
+    - audit
+    - taxation
+    - controller
+    - company secretary
+    - legal
+    - investments
+    - portfolio manager
+    - fund manager
+    # Bare "operations", not "operations manager": a VP - Operations posting at
+    # a life insurer routinely asks for knowledge of the bancassurance model,
+    # and that lone word in its duties was enough to carry it through the
+    # function gate. The title is what settles which job it is.
+    - operations
+    - service delivery
+    - customer service
+    - product management
+    - facility
+    - procurement
+    # Individual-contributor and commission-only field roles that sometimes
+    # carry a grand-sounding title.
+    - insurance advisor
+    - financial advisor
+    - insurance agent
+    - agency partner
+    - business associate
+
+  # Matched against title and description alike. Volume-hiring and
+  # entry-grade markers that no VP posting ever carries.
+  anywhere:
+    - fresher
+    - freshers
+    - walk-in
+    - walk in drive
+    - internship
+    - intern
+    - trainee
+    - apprentice
+    - commission only
+    - purely commission
+    - part-time
+    - work from home opportunity
+    - earn upto
+    - no experience required
+
+# ---------------------------------------------------------------- dimensions
+
+dimensions:
+
+  # Grade. Also the seniority gate: an opening matching neither list is
+  # dropped before scoring, which is what removes every Senior Manager and
+  # Key Account Manager role without naming them.
+  seniority:
+    points: 30
+    levels:
+      - id: vp_plus
+        title: VP & above
+        value: 1.0
+        keywords:
+          - vice president
+          - VP
+          - SVP
+          - EVP
+          - senior vice president
+          - executive vice president
+          - chief distribution officer
+          - chief business officer
+          - chief
+          - head
+          - head of
+          - national head
+          - country head
+          - regional head
+          - business head
+          - zonal head
+          - director
+          - senior director
+          - general manager
+          - senior general manager
+          - vice-president
+      # The candidate's current grade. A lateral move or a half-step, so it
+      # scores as eligible rather than full marks — these still belong in the
+      # brief, and at a bigger insurer an AVP seat can be the better job.
+      - id: avp
+        title: AVP & equivalent
+        value: 0.75
+        keywords:
+          - assistant vice president
+          - associate vice president
+          - deputy vice president
+          - AVP
+          - DVP
+          - deputy general manager
+          - associate director
+
+  # What the job actually is. Also the function gate: no `strong` keyword
+  # anywhere in the posting and the opening is dropped.
+  function:
+    points: 30
+    strong:
+      - key account management
+      - key accounts
+      - key account
+      - strategic accounts
+      - major accounts
+      - national accounts
+      - bancassurance
+      - banca
+      - bancassurance alliances
+      - partnership distribution
+      - partnerships
+      - strategic alliances
+      - alliances
+      - corporate agency
+      - broking channel
+      - broker relationships
+      - corporate solutions
+      - group business
+      - group insurance
+      - institutional business
+      - institutional sales
+      - corporate sales
+      - B2B sales
+      - account management
+      - relationship management
+      - client relationships
+      - business development
+      - distribution partnerships
+      - channel partnerships
+    supporting:
+      - distribution
+      - channel management
+      - premium delivery
+      - revenue growth
+      - portfolio
+      - client engagement
+      - stakeholder management
+      - partner management
+      - cross-sell
+      - upsell
+      - retention
+      - activation
+      - productivity
+      - joint business plan
+      - governance
+
+  # The industry. Life insurance is the target; the rest of financial services
+  # scores at a discount rather than being excluded, because a bank-side
+  # bancassurance seat or a group-benefits broker role is a real adjacency for
+  # this profile.
+  domain:
+    points: 20
+    strong:
+      - life insurance
+      - life insurer
+      - life assurance
+      - protection products
+      - annuity
+      - term insurance
+      - ULIP
+      - unit linked
+      - persistency
+      - APE
+      - annualised premium equivalent
+      - new business premium
+      - VNB
+      - embedded value
+      - policyholder
+      - takaful
+      - family takaful
+    adjacent:
+      # Scored at `adjacent_value` of a strong hit.
+      - insurance
+      - insurer
+      - general insurance
+      - health insurance
+      - employee benefits
+      - group benefits
+      - reinsurance
+      - insurance broking
+      - insurtech
+      - BFSI
+      - banking
+      - wealth management
+      - financial services
+      - NBFC
+      - asset management
+    adjacent_value: 0.55
+
+  # Where. Also the geography gate: a location matching no region is dropped,
+  # which is what keeps London and New York VP roles out of the brief.
+  #
+  # `preferred_cities` earn full marks, everything else in the region earns
+  # `value`. Gurgaon is home, so Delhi-NCR outranks Mumbai, and both outrank a
+  # relocation.
+  geography:
+    points: 10
+    regions:
+      - id: india
+        title: India
+        value: 0.85
+        countries: [India, Bharat]
+        preferred_cities:
+          - Gurgaon
+          - Gurugram
+          - Delhi
+          - New Delhi
+          - Noida
+          - Faridabad
+          - Ghaziabad
+          - NCR
+          - Delhi NCR
+        cities:
+          - Mumbai
+          - Navi Mumbai
+          - Thane
+          - Bangalore
+          - Bengaluru
+          - Hyderabad
+          - Chennai
+          - Pune
+          - Kolkata
+          - Ahmedabad
+          - Jaipur
+          - Chandigarh
+          - Lucknow
+          - Indore
+          - Kochi
+          - Cochin
+          - Coimbatore
+      - id: gcc
+        title: GCC & Middle East
+        value: 1.0
+        countries:
+          - United Arab Emirates
+          - UAE
+          - Saudi Arabia
+          - KSA
+          - Qatar
+          - Kuwait
+          - Bahrain
+          - Oman
+          - Middle East
+          - GCC
+        preferred_cities:
+          - Dubai
+          - Abu Dhabi
+          - Riyadh
+        cities:
+          - Sharjah
+          - Doha
+          - Kuwait City
+          - Manama
+          - Muscat
+          - Jeddah
+          - Dammam
+          - Khobar
+          - DIFC
+      - id: asia
+        title: Asia
+        value: 0.9
+        countries:
+          - Singapore
+          - Hong Kong
+          - Malaysia
+          - Thailand
+          - Philippines
+          - Indonesia
+          - Vietnam
+          - Japan
+          - South Korea
+          - Taiwan
+          - Sri Lanka
+          - Bangladesh
+          - Nepal
+          - Cambodia
+          - Brunei
+          - Asia
+          - APAC
+          - Asia Pacific
+          - Southeast Asia
+        preferred_cities:
+          - Singapore
+          - Hong Kong
+        cities:
+          - Kuala Lumpur
+          - Bangkok
+          - Manila
+          - Jakarta
+          - Ho Chi Minh City
+          - Hanoi
+          - Tokyo
+          - Seoul
+          - Taipei
+          - Colombo
+          - Dhaka
+
+  # The candidate's edge — what makes this profile unusual rather than merely
+  # qualified. These never gate anything; they are what separates a Strong from
+  # a Possible when title, function and geography all already match.
+  edge:
+    points: 10
+    keywords:
+      - P&L
+      - profit and loss
+      - P&L ownership
+      - multi-market
+      - multi market
+      - APAC
+      - Asia Pacific
+      - regional role
+      - cross-border
+      - shared services
+      - global capability centre
+      - GCC operations
+      - digital transformation
+      - transformation
+      - go-to-market
+      - GTM
+      - C-suite
+      - executive stakeholders
+      - CXO
+      - business case
+      - large budget
+      - cost optimisation
+      - cost optimization
+      - turnaround
+      - scale-up
+      - new business launch
+      - events
+      - engagement programmes
+      - customer experience
+      - CSAT
+
+# -------------------------------------------------------------------- search
+# The phrases that go out to the boards that accept a query (Careerjet, Jooble,
+# Adzuna) and into the saved-search links at the foot of every digest. Kept
+# short: these APIs match loosely, and a long query returns nothing at all.
+queries:
+  - vice president key account management insurance
+  - vice president bancassurance life insurance
+  - head of partnership distribution insurance
+  - vice president strategic alliances insurance
+  - AVP key account manager life insurance

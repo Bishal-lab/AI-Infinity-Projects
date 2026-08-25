@@ -1,0 +1,181 @@
+# Scans for senior key-account openings in life insurance and mails the digest
+# every weekday morning.
+#
+# The schedule is UTC, always: 02:37 UTC is 08:07 IST. Two deliberate choices —
+# the minute is off the hour because GitHub's scheduler queues heavily at :00
+# and a job asked for then routinely starts fifteen minutes late, and the days
+# are 1-5 because a job search is a weekday activity.
+#
+# Two things worth knowing about scheduled workflows:
+#   * GitHub disables them after 60 days with no commits to the default branch.
+#     This one pushes to its own state branch rather than the default one, so
+#     put a commit on the default branch every couple of months, or re-enable
+#     it from the Actions tab when GitHub mails to say it has been paused.
+#   * A scheduled run is best-effort. If GitHub drops one, the next morning's
+#     seven-day window picks up whatever was missed.
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   GMAIL_ADDRESS  GMAIL_APP_PASSWORD
+#     — the same two the BFSI digest bot already uses.
+# Optional: EMAIL_TO (defaults to the address below), EMAIL_FROM_NAME,
+#   CAREERJET_AFFID, JOOBLE_API_KEY, ADZUNA_APP_ID, ADZUNA_APP_KEY.
+
+name: VP role radar
+
+on:
+  schedule:
+    - cron: "37 2 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: What to do
+        type: choice
+        default: run
+        options:
+          - run             # scan and send
+          - dry-run         # scan, upload the output, send nothing
+          - preview         # scan and print it into this job log, send nothing
+          - check-sources   # fetch every source and report on its health
+          - test-delivery   # verify the Gmail credentials
+
+concurrency:
+  group: vp-role-radar
+  cancel-in-progress: false
+
+# Needed to publish the digest to the state branch that the scheduled Claude
+# session reads. Nothing is ever written to the default branch.
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: vp-role-radar
+
+env:
+  STATE_BRANCH: radar-state
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      # Falls back to the owner's address when the secret is not set.
+      EMAIL_TO: ${{ secrets.EMAIL_TO || 'das.bishal178@gmail.com' }}
+      EMAIL_FROM_NAME: ${{ secrets.EMAIL_FROM_NAME || 'VP Role Radar' }}
+      CAREERJET_AFFID: ${{ secrets.CAREERJET_AFFID }}
+      JOOBLE_API_KEY: ${{ secrets.JOOBLE_API_KEY }}
+      ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+      ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+      MODE: ${{ inputs.mode || 'run' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: vp-role-radar/requirements.txt
+
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+
+      # The seen-store is what stops a role that stays live for six weeks being
+      # mailed thirty times. The runner is thrown away after each job, so it is
+      # carried between runs in the Actions cache: a fresh key every run,
+      # restored from whatever the most recent run left behind.
+      - name: Restore the seen-store
+        uses: actions/cache/restore@v4
+        with:
+          path: vp-role-radar/state
+          key: vp-role-radar-state-${{ github.run_id }}
+          restore-keys: vp-role-radar-state-
+
+      - name: Scan and send
+        if: env.MODE == 'run'
+        run: python -m radar run
+
+      - name: Scan without sending
+        if: env.MODE == 'dry-run'
+        run: python -m radar run --dry-run
+
+      - name: Print the digest into the log
+        if: env.MODE == 'preview'
+        # Reads the brief without touching the seen-store, so running it never
+        # costs you an opening tomorrow.
+        run: python -m radar preview --explain
+
+      - name: Check the sources
+        if: env.MODE == 'check-sources'
+        run: python -m radar check-sources --all
+
+      - name: Verify the delivery credentials
+        if: env.MODE == 'test-delivery'
+        run: python -m radar test-delivery
+
+      - name: Save the seen-store
+        # Runs even when delivery failed, so a retry does not re-send what did
+        # get through. Skipped for the read-only modes, which never write it.
+        if: always() && env.MODE == 'run'
+        uses: actions/cache/save@v4
+        with:
+          path: vp-role-radar/state
+          key: vp-role-radar-state-${{ github.run_id }}
+
+      # The Claude side of the delivery reads this branch — see
+      # vp-role-radar/docs/claude-routine.md. Publishing happens on every run,
+      # including empty ones: a stale file would have the morning brief
+      # announce last week's roles as though they were new.
+      - name: Publish the digest to the state branch
+        if: always() && env.MODE == 'run'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ ! -f state/latest-digest.md ]; then
+            echo "no digest was written — nothing to publish"
+            exit 0
+          fi
+
+          remote="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          work="$(mktemp -d)"
+
+          # The state branch is orphaned on purpose: it carries two files, not a
+          # copy of the source tree, and it must never be mistaken for a branch
+          # anyone should merge.
+          if git clone --quiet --depth 1 --branch "$STATE_BRANCH" "$remote" "$work" 2>/dev/null; then
+            echo "updating the existing $STATE_BRANCH branch"
+          else
+            echo "creating the $STATE_BRANCH branch"
+            git clone --quiet --depth 1 "$remote" "$work"
+            git -C "$work" checkout --quiet --orphan "$STATE_BRANCH"
+            git -C "$work" rm -rqf . || true
+          fi
+
+          mkdir -p "$work/vp-role-radar/state"
+          cp state/latest-digest.md "$work/vp-role-radar/state/latest-digest.md"
+          if [ -f state/seen.json ]; then
+            cp state/seen.json "$work/vp-role-radar/state/seen.json"
+          fi
+
+          cd "$work"
+          git config user.name "vp-role-radar"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A vp-role-radar/state
+          if git diff --quiet --cached; then
+            echo "digest unchanged since the last run"
+          else
+            git commit --quiet -m "radar: digest for $(date -u +%Y-%m-%d)"
+            git push --quiet origin "$STATE_BRANCH"
+            echo "published to $STATE_BRANCH"
+          fi
+
+      - name: Upload the rendered brief
+        if: env.MODE == 'dry-run'
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-preview
+          path: vp-role-radar/out
+          retention-days: 7

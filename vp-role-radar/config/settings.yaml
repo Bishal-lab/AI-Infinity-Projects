@@ -1,0 +1,115 @@
+# Runtime settings for the VP Role Radar.
+# Everything here is safe to edit by hand; nothing in this file is a secret.
+# Secrets (Gmail password, optional board API keys) live in environment
+# variables — see .env.example.
+
+radar:
+  # All human-facing timestamps and the "which day is this" decision use this.
+  timezone: Asia/Kolkata
+
+  # How far back a posting may have been published and still count as new.
+  # Wider than the news digest's window on purpose: a senior role is advertised
+  # for weeks, boards backfill dates, and the seen-store — not this window — is
+  # what stops repeats. Seven days means a Monday run still catches something
+  # posted on the Friday a board only indexed over the weekend.
+  lookback_days: 7
+
+  # Postings with no usable date at all. "window" trusts them (job APIs that
+  # omit dates return newest-first), "drop" discards them. Trusting them is
+  # right here: several boards date only to the day, or not at all.
+  undated_items: window
+
+  # Size caps, applied in this order: per source, per tier, then overall.
+  max_items_per_source: 8
+  max_items_per_tier: 10
+  max_items_total: 30
+
+  # Fit floor, 0-100 (see profile.yaml). Anything below this is not shown.
+  # 45 is the bottom of the "stretch" tier: raise it to 55 to see only roles
+  # that match on every dimension.
+  min_fit: 45
+
+  # A digest with nothing new in it is not mailed — a job search does not need
+  # a daily "no news" note in the inbox.
+  send_when_empty: false
+
+  # …except on this weekday, when an empty digest goes out anyway. A radar that
+  # never mails is indistinguishable from a radar that has quietly broken, and
+  # one deliberate proof-of-life a week is what tells the two apart.
+  # Set to "" to switch that off entirely.
+  proof_of_life_weekday: monday
+
+fetch:
+  timeout_seconds: 25
+  max_workers: 6
+  retries: 2
+  backoff_seconds: 2.0
+  user_agent: "vp-role-radar/1.0 (+https://github.com/Bishal-lab/AI-Infinity-Projects)"
+  # A run that loses this fraction of its sources still sends, but the digest
+  # carries a visible warning footer so a silently rotting source gets noticed.
+  degraded_failure_ratio: 0.5
+
+state:
+  # Remembers what has already been sent, so a posting that stays live for six
+  # weeks is mailed once. Delete this file to make the next run treat
+  # everything as new.
+  path: state/seen.json
+  # Deliberately long. A senior opening sits on a board far longer than a news
+  # story stays current, and 45 days is past the point where re-sending it
+  # would be useful rather than annoying.
+  retention_days: 45
+
+delivery:
+  email:
+    enabled: true
+    # {count} {noun} {date} are filled in by the renderer.
+    subject_template: "VP Role Radar — {count} {noun} ({date})"
+    smtp_host: smtp.gmail.com
+    smtp_port: 465
+    use_ssl: true
+    summary_chars: 260
+
+  # The Markdown copy that gets committed to the state branch. This is what the
+  # scheduled Claude Routine reads to post the same brief into Claude chat —
+  # see docs/claude-routine.md.
+  digest_file:
+    enabled: true
+    path: state/latest-digest.md
+
+# Pre-filtered searches, printed at the foot of every digest. They exist
+# because the boards that carry the most Indian and Gulf VP roles — iimjobs,
+# Naukri, Bayt — publish no key-free feed to read programmatically. One click
+# each, and no login.
+#
+# Marked `verified` are URLs observed returning the right kind of listing while
+# this was built; the rest follow each site's documented URL shape. The Google
+# ones are deliberate: a site: query never rots when a board changes its
+# search paths, and `tbs=qdr:w` limits it to the past week.
+saved_searches:
+  - label: "iimjobs · VP banca / key accounts (past week)"
+    url: "https://www.google.com/search?q=site:iimjobs.com+%22vice+president%22+(%22key+account%22+OR+bancassurance+OR+alliances)+life+insurance&tbs=qdr:w"
+  - label: "LinkedIn · VP key accounts, India (past week)"
+    url: "https://www.linkedin.com/jobs/search/?keywords=Vice%20President%20Key%20Account%20Management%20Insurance&location=India&f_TPR=r604800"
+  - label: "LinkedIn · VP bancassurance, UAE (past week)"
+    url: "https://www.linkedin.com/jobs/search/?keywords=Vice%20President%20Bancassurance%20Insurance&location=United%20Arab%20Emirates&f_TPR=r604800"
+  - label: "LinkedIn · VP partnership distribution, Singapore (past week)"
+    url: "https://www.linkedin.com/jobs/search/?keywords=Vice%20President%20Partnership%20Distribution%20Insurance&location=Singapore&f_TPR=r604800"
+  - label: "Naukri · VP bancassurance"
+    url: "https://www.naukri.com/vice-president-bancassurance-jobs"
+  - label: "Naukri · key account manager, life insurance"
+    url: "https://www.naukri.com/key-account-manager-life-insurance-jobs"
+  - label: "GulfTalent · Vice President roles, UAE"
+    url: "https://www.gulftalent.com/uae/jobs/title/vice-president"
+    verified: true
+  - label: "NaukriGulf · insurance, Dubai"
+    url: "https://www.naukrigulf.com/insurance-jobs-in-dubai"
+    verified: true
+  - label: "Bayt · bancassurance, Middle East"
+    url: "https://www.bayt.com/en/international/jobs/bancassurance-jobs/"
+    verified: true
+  - label: "Michael Page · Vice President, UAE"
+    url: "https://www.michaelpage.ae/jobs/vice-president"
+    verified: true
+  - label: "Michael Page · Vice President, Hong Kong"
+    url: "https://www.michaelpage.com.hk/jobs/vice-president"
+    verified: true

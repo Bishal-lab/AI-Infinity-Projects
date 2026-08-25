@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Example Insurer — careers</title>
+    <item>
+      <title>Vice President - Bancassurance Alliances</title>
+      <link>https://example.test/jobs/1</link>
+      <description>Own the bank partnership P&amp;L for the life insurance business. 15-20 years.</description>
+      <pubDate>Mon, 24 Aug 2026 09:00:00 +0000</pubDate>
+      <guid>ex-1</guid>
+      <location>Gurgaon, India</location>
+    </item>
+    <item>
+      <title>Assistant Vice President - Key Account Manager</title>
+      <link>https://example.test/jobs/2</link>
+      <description>Manage broker relationships for the group business. 8-12 years.</description>
+      <pubDate>Sun, 23 Aug 2026 09:00:00 +0000</pubDate>
+      <guid>ex-2</guid>
+      <location>Mumbai, India</location>
+    </item>
+  </channel>
+</rss>

@@ -25,3 +25,16 @@ A collection of practical AI/automation projects.
   item, and remembers what it already sent so an overlapping window never repeats itself. Runs free
   on a GitHub Actions schedule or on any machine with cron; two dependencies, no news API keys, and
   a test suite that never touches the network (Python + RSS + Telegram Bot API + Gmail SMTP).
+
+- [`vp-role-radar/`](vp-role-radar/) — a standing watch for Vice President & equivalent
+  key-account-management openings in Life Insurance across India, the GCC and Asia, delivered
+  every weekday morning to Gmail and to Claude chat. It reads insurer career APIs and job-board
+  aggregators, scores every opening out of 100 against one candidate profile across five
+  dimensions — seniority, function, domain, geography and the candidate's own edge — and prints
+  the reasons beside the score, so a brief can be trusted at a glance. Three of those dimensions
+  are gates, which is what keeps a Senior Manager role, a VP-Actuarial role and a London posting
+  out without naming any of them. It collapses one job listed on three boards into one item and
+  remembers what it has already sent, so a role live for six weeks is mailed once. Delivery is
+  split because capability is: a GitHub Action does the scanning that a Claude sandbox cannot,
+  and a scheduled Claude session reads what it published (Python + Workday/Greenhouse/Lever JSON
+  + Gmail SMTP, no paid API keys, and a 101-test suite that never touches the network).

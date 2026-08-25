@@ -1,0 +1,19 @@
+{
+  "total": 2,
+  "jobPostings": [
+    {
+      "title": "Vice President, Key Accounts (Bancassurance)",
+      "externalPath": "/job/Singapore/VP-Key-Accounts_JR-2201",
+      "locationsText": "Singapore",
+      "postedOn": "Posted 3 Days Ago",
+      "bulletFields": ["JR-2201"]
+    },
+    {
+      "title": "Senior Manager, Underwriting",
+      "externalPath": "/job/Hong-Kong/Senior-Manager-Underwriting_JR-2202",
+      "locationsText": "Hong Kong",
+      "postedOn": "Posted 10 Days Ago",
+      "bulletFields": ["JR-2202"]
+    }
+  ]
+}
