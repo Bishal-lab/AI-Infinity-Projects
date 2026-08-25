@@ -73,7 +73,7 @@ def test_parse_date_gives_up_cleanly():
 def test_canonical_url_strips_tracking():
     assert canonical_url(
         "https://www.example.test/jobs/1?utm_source=x&trk=y&id=7"
-    ) == "https://example.test/jobs/1?id=7"
+    ) == "https://www.example.test/jobs/1?id=7"
 
 
 def test_clean_location_drops_workdays_placeholder():
@@ -100,3 +100,11 @@ def test_to_opening_falls_back_to_the_sources_company(source):
     branded = replace(source, company="AIA")
     opening = to_opening(make_posting(company=""), branded, now=NOW)
     assert opening.company == "AIA"
+
+
+def test_canonical_url_keeps_www_because_the_reader_clicks_it():
+    """Some hosts answer only on the www name, and this URL is the apply link.
+    Collapsing www is a dedupe concern, handled in dedupe.url_key."""
+    assert canonical_url("https://www.iimjobs.com/j/vp-key-accounts-1712778") == (
+        "https://www.iimjobs.com/j/vp-key-accounts-1712778"
+    )

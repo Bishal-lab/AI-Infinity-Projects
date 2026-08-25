@@ -195,9 +195,10 @@ def canonical_url(url: str) -> str:
     if not parts.scheme or not parts.netloc:
         return text
 
+    # "www." is deliberately kept. This URL is what a reader clicks, and some
+    # hosts answer only on the www name; collapsing the two is a dedupe
+    # concern, and dedupe.url_key handles it there.
     host = parts.netloc.lower()
-    if host.startswith("www."):
-        host = host[4:]
     if host.endswith(":80") or host.endswith(":443"):
         host = host.rsplit(":", 1)[0]
 

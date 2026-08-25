@@ -47,3 +47,11 @@ def test_two_employers_with_one_title_stay_separate():
 
 def test_the_same_url_twice_collapses():
     assert len(dedupe([make_opening(), make_opening()])) == 1
+
+
+def test_www_and_bare_hosts_are_one_listing():
+    from radar.dedupe import url_key
+
+    assert url_key(make_opening(url="https://www.iimjobs.com/j/1")) == url_key(
+        make_opening(url="https://iimjobs.com/j/1")
+    )

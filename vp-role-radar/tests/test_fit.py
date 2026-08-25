@@ -136,11 +136,13 @@ def test_out_of_region_roles_are_rejected(scorer):
     assert "outside" in verdict.reason
 
 
-def test_an_unrelated_vp_function_is_rejected(scorer):
+def test_a_vp_title_naming_no_function_is_rejected(scorer):
+    """Nothing in the title or the body names a key-account-shaped job, so the
+    function gate — not the exclusion list — is what turns this away."""
     verdict = scorer.score(
         make_opening(
-            title="Vice President - Operations",
-            summary="Lead policy servicing operations for the life insurance business.",
+            title="Vice President - Special Projects",
+            summary="Lead priority projects for the life insurance business.",
         )
     )
     assert not verdict.accepted
@@ -165,3 +167,22 @@ def test_volume_hiring_language_is_rejected_anywhere(scorer):
         make_opening(summary="Walk-in drive for freshers. Key accounts, life insurance.")
     )
     assert not verdict.accepted
+
+
+def test_a_vp_operations_role_at_a_life_insurer_is_rejected(scorer):
+    """Found by running the radar over real listings: a VP - Operations posting
+    asks for knowledge of the bancassurance model, and that mention alone was
+    enough to clear the function gate and score it as a Strong fit."""
+    verdict = scorer.score(
+        make_opening(
+            title="Vice President - Operations",
+            company="Max Life Insurance",
+            location="Gurugram, Haryana, India",
+            summary=(
+                "Operations leadership requiring knowledge of the bancassurance "
+                "or banking operations model. 14-20 years."
+            ),
+        )
+    )
+    assert not verdict.accepted
+    assert "different function" in verdict.reason

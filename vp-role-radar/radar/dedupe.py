@@ -135,7 +135,10 @@ def _hash(value: str) -> str:
 
 
 def url_key(opening: Opening) -> str:
-    return "u:" + _hash(opening.url.lower())
+    """The URL as an identity: case-folded, and with "www." collapsed so that
+    two listings of one job on the same host compare equal."""
+    url = opening.url.lower()
+    return "u:" + _hash(url.replace("://www.", "://", 1))
 
 
 def role_key(opening: Opening) -> str:

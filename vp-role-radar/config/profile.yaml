@@ -95,7 +95,14 @@ exclude:
     - investments
     - portfolio manager
     - fund manager
-    - operations manager
+    # Bare "operations", not "operations manager": a VP - Operations posting at
+    # a life insurer routinely asks for knowledge of the bancassurance model,
+    # and that lone word in its duties was enough to carry it through the
+    # function gate. The title is what settles which job it is.
+    - operations
+    - service delivery
+    - customer service
+    - product management
     - facility
     - procurement
     # Individual-contributor and commission-only field roles that sometimes
