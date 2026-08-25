@@ -1,8 +1,9 @@
 # BFSI & Life Insurance Daily Brief
 
 A small, self-contained bot that reads the BFSI press every morning, keeps the
-stories that matter to a life-insurance reader, and delivers one brief to
-**Telegram** and **Gmail** at **08:00 IST**.
+stories that matter to a life-insurance reader, and delivers one brief by
+**e-mail** at **08:00 IST**. Telegram is supported too, and switched off — one
+line in `config/settings.yaml` turns it on.
 
 No API keys for news, no scraping, no paid tiers: it reads public RSS/Atom feeds
 from specialist BFSI desks, the RBI, the general business press, and targeted
@@ -39,8 +40,8 @@ Window 21 Aug 06:00 – 22 Aug 08:00 (IST) · 11/11 sources responded
 
 - [What it actually does](#what-it-actually-does)
 - [Quick start](#quick-start)
-- [Setting up Telegram](#setting-up-telegram)
 - [Setting up Gmail](#setting-up-gmail)
+- [Setting up Telegram — optional](#setting-up-telegram--optional)
 - [Scheduling it for 08:00 IST](#scheduling-it-for-0800-ist)
 - [Tuning what you receive](#tuning-what-you-receive)
 - [Command reference](#command-reference)
@@ -93,14 +94,20 @@ pip install -r requirements.txt
 cp .env.example .env      # then fill in the four credentials
 python -m bot check-sources   # are the feeds alive?
 python -m bot preview         # what would today's brief say?
-python -m bot test-delivery   # are Telegram and Gmail wired up?
+python -m bot test-delivery   # is delivery wired up?
 python -m bot run             # send it
 ```
 
 `preview` and `check-sources` need no credentials at all, so you can see what
 the brief looks like before setting anything up.
 
-## Setting up Telegram
+## Setting up Telegram — optional
+
+Off by default: `delivery.telegram.enabled: false` in `config/settings.yaml`.
+Set it to `true` to get the brief in Telegram as well as, or instead of,
+e-mail — then follow the steps below. `test-delivery` skips a channel that is
+off rather than reporting it as broken, so an e-mail-only setup still comes
+back clean.
 
 1. Open Telegram, message **@BotFather**, send `/newbot`, and follow the two
    prompts (a display name, then a username ending in `bot`).
@@ -166,16 +173,20 @@ that expects STARTTLS on port 587.
 ### GitHub Actions (nothing to host)
 
 `.github/workflows/bfsi-digest.yml` in the repository root already does this.
-Add five repository secrets under **Settings → Secrets and variables →
+Add two repository secrets under **Settings → Secrets and variables →
 Actions**:
 
 | Secret | Value |
 | --- | --- |
-| `TELEGRAM_BOT_TOKEN` | from BotFather |
-| `TELEGRAM_CHAT_ID` | from `getUpdates` |
 | `GMAIL_ADDRESS` | the sending Gmail account |
 | `GMAIL_APP_PASSWORD` | the 16-character App Password |
-| `EMAIL_TO` | optional; defaults to `GMAIL_ADDRESS` |
+
+Two more are optional: `EMAIL_TO` if the brief should land somewhere other than
+the sending account, and `EMAIL_FROM_NAME` for the display name on `From:`.
+
+Only if you turn Telegram on as well: `TELEGRAM_BOT_TOKEN` and
+`TELEGRAM_CHAT_ID`. The workflow already reads both, so nothing there needs
+editing.
 
 Then run the workflow once by hand (**Actions → BFSI digest → Run workflow**),
 choosing `test-delivery` and then `run`, to confirm it works before you rely on

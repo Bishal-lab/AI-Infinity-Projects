@@ -65,7 +65,11 @@ state:
 
 delivery:
   telegram:
-    enabled: true
+    # Off: the brief goes to e-mail only. Everything below still works — flip
+    # this to true and set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID to get the
+    # brief in Telegram as well, or instead. `test-delivery` skips a channel
+    # that is off rather than reporting it as broken.
+    enabled: false
     disable_web_page_preview: true
     # Telegram hard-caps a message at 4096 characters; the digest is split on
     # item boundaries below this size.

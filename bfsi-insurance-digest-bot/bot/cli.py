@@ -217,12 +217,20 @@ def cmd_test_delivery(args: argparse.Namespace) -> int:
     from .channels import email_smtp, telegram
 
     problems = 0
+    checked = 0
 
     print("Telegram")
-    if not telegram.configured():
+    if not config.telegram.enabled:
+        # A channel switched off on purpose is not a fault. Reporting it as one
+        # would mean this command can never come back clean on an e-mail-only
+        # setup, which is exactly when you most want to trust its verdict.
+        print("  – off in settings.yaml (delivery.telegram.enabled)")
+    elif not telegram.configured():
         print("  ✗ not configured: " + ", ".join(telegram.missing_settings()))
         problems += 1
+        checked += 1
     else:
+        checked += 1
         try:
             print(f"  ✓ {telegram.verify()}")
             if args.send:
@@ -236,10 +244,14 @@ def cmd_test_delivery(args: argparse.Namespace) -> int:
             problems += 1
 
     print("\nEmail")
-    if not email_smtp.configured():
+    if not config.email.enabled:
+        print("  – off in settings.yaml (delivery.email.enabled)")
+    elif not email_smtp.configured():
         print("  ✗ not configured: " + ", ".join(email_smtp.missing_settings()))
         problems += 1
+        checked += 1
     else:
+        checked += 1
         try:
             print(f"  ✓ {email_smtp.verify(config)}")
             if args.send:
@@ -255,11 +267,14 @@ def cmd_test_delivery(args: argparse.Namespace) -> int:
             print(f"  ✗ {exc}")
             problems += 1
 
+    if not checked:
+        print("\nEvery channel is off — the brief has nowhere to go.")
+        return EXIT_DELIVERY_FAILED
     if problems:
         print(f"\n{problems} channel(s) need attention — see README §Setup.")
-    else:
-        print("\nBoth channels are ready.")
-    return EXIT_OK if problems == 0 else EXIT_DELIVERY_FAILED
+        return EXIT_DELIVERY_FAILED
+    print(f"\n{checked} channel(s) ready.")
+    return EXIT_OK
 
 
 # --------------------------------------------------------------------------- #

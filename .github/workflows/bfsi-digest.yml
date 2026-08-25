@@ -1,4 +1,4 @@
-# Sends the BFSI & life insurance brief to Telegram and Gmail every morning.
+# Sends the BFSI & life insurance brief to Gmail every morning.
 #
 # The schedule is UTC, always. 01:30 UTC is 07:00 IST — an hour before the brief
 # is wanted, and that hour is deliberate.
@@ -23,9 +23,15 @@
 #   * A scheduled run is best-effort. If GitHub drops one, the next morning's
 #     26-hour window picks up the stories that were missed.
 #
+# The brief goes to e-mail only; Telegram is off in config/settings.yaml.
+#
 # Required repository secrets (Settings → Secrets and variables → Actions):
-#   TELEGRAM_BOT_TOKEN  TELEGRAM_CHAT_ID  GMAIL_ADDRESS  GMAIL_APP_PASSWORD
+#   GMAIL_ADDRESS  GMAIL_APP_PASSWORD
 # Optional: EMAIL_TO (defaults to GMAIL_ADDRESS), EMAIL_FROM_NAME
+#
+# The two TELEGRAM_* secrets below are read but unused while that channel is
+# off. They stay wired up so turning Telegram back on is a one-line config
+# change rather than a workflow edit as well.
 
 name: BFSI digest
 

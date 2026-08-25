@@ -14,12 +14,20 @@ from bot.envfile import load_env_file
 
 @pytest.fixture
 def wired(monkeypatch, recent_fetch, fixture_sources, config, tmp_path):
-    """Point the CLI at fixture feeds, a temporary seen-store, and fake channels."""
+    """Point the CLI at fixture feeds, a temporary seen-store, and fake channels.
+
+    Both channels are forced on. The shipped settings.yaml sends by e-mail only,
+    but the fan-out, --only and partial-failure machinery is still live code and
+    is what these tests are about; `test_the_shipped_config_is_email_only` below
+    is what pins the default itself.
+    """
     state_path = tmp_path / "seen.json"
     patched = replace(
         config,
         sources=fixture_sources,
         state=replace(config.state, path=state_path),
+        telegram=replace(config.telegram, enabled=True),
+        email=replace(config.email, enabled=True),
     )
     monkeypatch.setattr(cli, "load_config", lambda directory=None: patched)
     # Both the pipeline and `check-sources` reach the network through their own
@@ -251,3 +259,96 @@ def test_the_newest_chat_is_recommended_and_repeats_collapse(telegram_api, capsy
     assert "Set TELEGRAM_CHAT_ID to 222" in out
     assert out.count("111") == 1
     assert "separate them with commas" in out
+
+
+# --------------------------------------------------------- email-only delivery
+
+def test_the_shipped_config_is_email_only(config):
+    """The brief goes to Gmail. Telegram is off by choice, not by accident —
+    if someone flips it back on, that should be a deliberate edit."""
+    assert config.email.enabled
+    assert not config.telegram.enabled
+
+
+def test_a_disabled_channel_is_not_a_delivery_failure(monkeypatch, wired, capsys):
+    """`test-delivery` has to come back clean on an e-mail-only setup, or its
+    verdict is worthless exactly where it matters most."""
+    from bot.channels import email_smtp, telegram
+
+    patched = replace(
+        wired,
+        telegram=replace(wired.telegram, enabled=False),
+        email=replace(wired.email, enabled=True),
+    )
+    monkeypatch.setattr(cli, "load_config", lambda directory=None: patched)
+    monkeypatch.setattr(email_smtp, "configured", lambda: True)
+    monkeypatch.setattr(email_smtp, "verify", lambda config: "smtp ok")
+    monkeypatch.setattr(
+        telegram, "configured", lambda: pytest.fail("a disabled channel was probed")
+    )
+
+    assert cli.main(["test-delivery"]) == cli.EXIT_OK
+    out = capsys.readouterr().out
+    assert "off in settings.yaml" in out
+    assert "1 channel(s) ready" in out
+
+
+def test_an_unconfigured_enabled_channel_still_fails(monkeypatch, wired, capsys):
+    """The flag suppresses the check; it must not suppress a real problem."""
+    from bot.channels import email_smtp
+
+    patched = replace(wired, telegram=replace(wired.telegram, enabled=False))
+    monkeypatch.setattr(cli, "load_config", lambda directory=None: patched)
+    monkeypatch.setattr(email_smtp, "configured", lambda: False)
+    monkeypatch.setattr(email_smtp, "missing_settings", lambda: ["GMAIL_ADDRESS"])
+
+    assert cli.main(["test-delivery"]) == cli.EXIT_DELIVERY_FAILED
+    assert "GMAIL_ADDRESS" in capsys.readouterr().out
+
+
+def test_every_channel_off_is_reported_as_a_problem(monkeypatch, wired, capsys):
+    """Silence is the one outcome the bot exists to prevent."""
+    patched = replace(
+        wired,
+        telegram=replace(wired.telegram, enabled=False),
+        email=replace(wired.email, enabled=False),
+    )
+    monkeypatch.setattr(cli, "load_config", lambda directory=None: patched)
+
+    assert cli.main(["test-delivery"]) == cli.EXIT_DELIVERY_FAILED
+    assert "nowhere to go" in capsys.readouterr().out
+
+
+def test_run_sends_only_by_email_under_the_shipped_config(monkeypatch, wired, channels):
+    """End to end on the real default: the digest reaches e-mail and Telegram is
+    never contacted, even though its credentials would work."""
+    patched = replace(wired, telegram=replace(wired.telegram, enabled=False))
+    monkeypatch.setattr(cli, "load_config", lambda directory=None: patched)
+
+    assert cli.main(["run"]) == cli.EXIT_OK
+    assert channels["email"]
+    assert channels["telegram"] == []
+
+
+def test_email_to_is_not_reported_missing_when_it_merely_defaults(monkeypatch):
+    """EMAIL_TO falls back to the sender, so naming it alongside GMAIL_ADDRESS
+    turns a two-secret setup into an apparently three-secret one."""
+    from bot.channels import email_smtp
+
+    for name in ("GMAIL_ADDRESS", "GMAIL_APP_PASSWORD", "EMAIL_TO"):
+        monkeypatch.delenv(name, raising=False)
+    assert email_smtp.missing_settings() == ["GMAIL_ADDRESS", "GMAIL_APP_PASSWORD"]
+
+    monkeypatch.setenv("GMAIL_ADDRESS", "someone@example.test")
+    monkeypatch.setenv("GMAIL_APP_PASSWORD", "x")
+    assert email_smtp.missing_settings() == []
+    assert email_smtp.recipients() == ["someone@example.test"]
+
+
+def test_a_malformed_email_to_is_still_caught(monkeypatch):
+    from bot.channels import email_smtp
+
+    monkeypatch.setenv("GMAIL_ADDRESS", "someone@example.test")
+    monkeypatch.setenv("GMAIL_APP_PASSWORD", "x")
+    monkeypatch.setenv("EMAIL_TO", " , ; ")
+    assert email_smtp.missing_settings() == ["EMAIL_TO"]

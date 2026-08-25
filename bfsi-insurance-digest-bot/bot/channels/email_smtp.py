@@ -55,7 +55,11 @@ def missing_settings() -> list[str]:
         missing.append("GMAIL_ADDRESS")
     if not password():
         missing.append("GMAIL_APP_PASSWORD")
-    if not recipients():
+    if sender() and not recipients():
+        # Only reachable if EMAIL_TO is set to something that parses to nothing
+        # (a lone comma, say). With the sender unset it is the sender that is
+        # missing, not the recipient — EMAIL_TO defaults to it, and listing
+        # both makes a two-secret setup look like a three-secret one.
         missing.append("EMAIL_TO")
     return missing
 
