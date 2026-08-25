@@ -14,15 +14,15 @@
 #   enabled   set false to mute a source without deleting it
 #
 # ---------------------------------------------------------------------------
-# IMPORTANT, and the reason so many entries below are marked `unverified`:
-# the sandbox this project was written in blocks outbound access to job-board
-# hosts, so no URL here could be checked as it was written. The runner has open
-# egress and can. Before trusting the radar, run once:
+# Every source here was checked against a live runner on 25 Aug 2026. Do the
+# same after changing anything in this file:
 #
 #     Actions → VP role radar → Run workflow → mode: check-sources
 #
-# It fetches every enabled source and prints what came back. Fix or disable
-# whatever it reports dead. A wrong Workday tenant is the likeliest failure and
+# It fetches every enabled source and prints what came back — how many jobs,
+# how recent, and what failed. Note that the mode exits non-zero when any
+# source is dead, so a red run there means "something needs fixing", not that
+# the radar is broken. A wrong Workday site name is the likeliest failure and
 # the easiest fix — see the note above the Workday block.
 # ---------------------------------------------------------------------------
 
@@ -39,24 +39,33 @@ sources:
   # Paste that whole thing as `url`. The adapter turns it into the JSON
   # endpoint itself, so there is nothing else to work out.
   #
-  # The tenant/site pairs below are best guesses at the published pattern and
-  # are exactly what `check-sources` is for.
+  # Every entry below was checked against a live runner on 25 Aug 2026 with
+  #     Actions → VP role radar → Run workflow → mode: check-sources
+  # Two of the six original guesses were right; the others are corrected or
+  # disabled with the reason recorded, so nobody re-adds them expecting them to
+  # work. Re-run that mode after changing anything here.
 
   - id: workday-aia
     name: AIA Group
     kind: workday
-    url: https://aia.wd3.myworkdayjobs.com/en-US/AIACareers
+    # The site is `External`, not the `AIACareers` first guessed here, which
+    # answered 404.
+    url: https://aia.wd3.myworkdayjobs.com/en-US/External
     company: AIA
     query: key account
-    enabled: true          # unverified — confirm with check-sources
+    enabled: true
 
   - id: workday-prudential
     name: Prudential plc
     kind: workday
-    url: https://prudential.wd3.myworkdayjobs.com/en-US/Prudential_Careers
+    # Prudential plc — the Asia and Africa business, which is the one that
+    # matters for this search. Not Prudential Financial of the United States,
+    # a separate company on its own tenant (pru.wd5). The site name is the
+    # lowercase `prudential`; `Prudential_Careers` answered 404.
+    url: https://prudential.wd3.myworkdayjobs.com/en-US/prudential
     company: Prudential plc
     query: partnership distribution
-    enabled: true          # unverified — confirm with check-sources
+    enabled: true
 
   - id: workday-manulife
     name: Manulife / John Hancock
@@ -64,7 +73,7 @@ sources:
     url: https://manulife.wd3.myworkdayjobs.com/en-US/MFCJH_Jobs
     company: Manulife
     query: bancassurance
-    enabled: true          # unverified — confirm with check-sources
+    enabled: true          # verified 25 Aug 2026 — returned 20 jobs
 
   - id: workday-sunlife
     name: Sun Life
@@ -72,15 +81,21 @@ sources:
     url: https://sunlife.wd3.myworkdayjobs.com/en-US/Experienced-Jobs
     company: Sun Life
     query: distribution partnership
-    enabled: true          # unverified — confirm with check-sources
+    enabled: true          # verified 25 Aug 2026 — returned 17 jobs
 
+  # Off, and why — so neither is re-added expecting it to work. Both answered
+  # HTTP 422 on every site name tried: the Workday tenant exists but serves no
+  # public search site, because both run their careers elsewhere —
+  # jobs.metlife.com and careers.zurich.com respectively. Neither publishes a
+  # key-free JSON endpoint, so they are reachable only through an aggregator
+  # (see the keyed sources below) or by hand.
   - id: workday-metlife
     name: MetLife
     kind: workday
     url: https://metlife.wd5.myworkdayjobs.com/en-US/MetLife_Careers
     company: MetLife
     query: key account
-    enabled: true          # unverified — confirm with check-sources
+    enabled: false
 
   - id: workday-zurich
     name: Zurich Insurance
@@ -88,7 +103,7 @@ sources:
     url: https://zurich.wd3.myworkdayjobs.com/en-US/Zurich_Careers
     company: Zurich
     query: distribution
-    enabled: true          # unverified — confirm with check-sources
+    enabled: false
 
   # ------------------------------------------------- Greenhouse and Lever
   # Both serve public board JSON with no key. Insurtechs and the newer digital

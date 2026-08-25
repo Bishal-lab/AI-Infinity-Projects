@@ -92,19 +92,22 @@ repo sending that brief needs no new credentials here.
 
 ### 2. Confirm the sources
 
-**Do this before trusting the radar.** The source list ships with several
-unverified entries: the sandbox this project was written in blocked every job
-board, so no URL in it could be checked as it was written.
+The shipped list was verified on a live runner on 25 Aug 2026 — AIA,
+Prudential plc, Manulife and Sun Life all answer. Re-run this after changing
+`sources.yaml`, and whenever the digest footer starts naming a source it could
+not read:
 
 ```
 Actions → VP role radar → Run workflow → mode: check-sources
 ```
 
 It fetches every source and prints what came back — how many jobs, how recent,
-and what failed. Fix or disable whatever it reports dead. A wrong Workday
-tenant is the likeliest failure and the easiest fix: open the employer's
-careers site, copy the URL from the address bar, and paste it into
-`sources.yaml` as-is. The adapter derives the JSON endpoint from it.
+and what failed. The mode exits non-zero when any source is dead, so a red run
+there means "something needs fixing", not that the radar is broken.
+
+A wrong Workday site name is the likeliest failure and the easiest fix: open
+the employer's careers site, copy the URL from the address bar, and paste it
+into `sources.yaml` as-is. The adapter derives the JSON endpoint from it.
 
 Then `mode: test-delivery`, then `mode: dry-run` to read the rendered brief as
 an artifact, and finally `mode: run` for a real send.
@@ -172,6 +175,8 @@ docs/       scheduling · tuning · the Claude-chat lane
   the richest India sources for these roles, publish nothing key-free to read.
   They are covered by saved-search links in every digest until a Careerjet or
   Jooble key is added — a config change, not a rebuild.
-- **The shipped source URLs are unverified.** Step 2 above is how they get
-  confirmed, and `check-sources` exists so that is a two-minute job.
+- **Two of the six Workday employers are off.** MetLife and Zurich answer HTTP
+  422 on their Workday tenants — both run their careers sites elsewhere and
+  publish no key-free endpoint, so they are reachable only through an
+  aggregator or by hand. The reason is recorded in `sources.yaml` next to each.
 - **Nothing here scrapes a site that forbids it**, and no board login is used.
