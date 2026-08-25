@@ -158,8 +158,16 @@ Password**:
 1. <https://myaccount.google.com> → **Security** → turn on **2-Step
    Verification** (App Passwords do not exist without it).
 2. Same page → **App passwords** → create one, name it anything.
-3. Google shows 16 characters. That is `GMAIL_APP_PASSWORD` — spaces in it are
-   ignored, so keep or drop them.
+3. Google shows **16 lowercase letters**, in four groups of four. That is
+   `GMAIL_APP_PASSWORD` — spaces are stripped, so keep or drop them.
+
+An App Password is not a password you choose. If what you have is longer or
+shorter than 16 characters, or contains a capital or a digit, it is not one —
+Gmail's SMTP will reject it every time, and `test-delivery` now says so before
+it dials out rather than letting the first 08:00 run discover it.
+
+Your ordinary Google account password is never used here, and should never be
+put in a secret, a `.env` file, or a chat window.
 
 Set `GMAIL_ADDRESS` to the sending account and `EMAIL_TO` to wherever the brief
 should land (defaults to the sender; comma-separate for several).

@@ -352,3 +352,69 @@ def test_a_malformed_email_to_is_still_caught(monkeypatch):
     monkeypatch.setenv("GMAIL_APP_PASSWORD", "x")
     monkeypatch.setenv("EMAIL_TO", " , ; ")
     assert email_smtp.missing_settings() == ["EMAIL_TO"]
+
+
+# ------------------------------------------------- Gmail credential shape
+
+def test_an_app_password_keeps_its_shape_with_the_spaces_google_shows(monkeypatch):
+    """Google prints it as four groups of four and people paste it as printed.
+    Gmail wants the sixteen characters bare."""
+    from bot.channels import email_smtp
+
+    monkeypatch.setenv("GMAIL_APP_PASSWORD", "abcd efgh ijkl mnop")
+    assert email_smtp.password() == "abcdefghijklmnop"
+    assert email_smtp.looks_like_an_app_password(email_smtp.password())
+
+
+def test_an_account_password_is_rejected_before_smtp_is_dialled(monkeypatch, wired):
+    """Gmail always refuses an account password over SMTP. Catching the shape
+    here turns an 08:00 "Username and Password not accepted" into an error at
+    setup time that names the fix."""
+    from bot.channels import email_smtp
+
+    monkeypatch.setenv("GMAIL_ADDRESS", "someone@example.test")
+    monkeypatch.setenv("GMAIL_APP_PASSWORD", "NotAnAppPassword1")
+    monkeypatch.setattr(
+        email_smtp, "_connect", lambda *a, **k: pytest.fail("should not have connected")
+    )
+
+    problem = email_smtp.credential_problem(wired)
+    assert problem and "16 lowercase letters" in problem
+
+    result = email_smtp.send("s", "t", "<p>h</p>", wired)
+    assert not result.ok and "App Password" in result.detail
+
+    with pytest.raises(email_smtp.EmailError, match="App Password"):
+        email_smtp.verify(wired)
+
+
+@pytest.mark.parametrize(
+    "value,ok",
+    [
+        ("abcdefghijklmnop", True),
+        ("abcd efgh ijkl mnop", True),
+        ("abcdefghijklmno", False),      # fifteen
+        ("abcdefghijklmnopq", False),    # seventeen
+        ("abcdefghijklmnoP", False),     # a capital
+        ("abcdefghijklmno1", False),     # a digit
+    ],
+)
+def test_the_app_password_shape_is_exact(monkeypatch, value, ok):
+    from bot.channels import email_smtp
+
+    monkeypatch.setenv("GMAIL_APP_PASSWORD", value)
+    assert email_smtp.looks_like_an_app_password(email_smtp.password()) is ok
+
+
+def test_a_non_gmail_host_is_left_alone(monkeypatch, wired):
+    """The 16-letter rule is Gmail's, not SMTP's. Another provider takes
+    whatever it takes, and the bot must not invent a rule for it."""
+    from dataclasses import replace as _replace
+
+    from bot.channels import email_smtp
+
+    monkeypatch.setenv("GMAIL_ADDRESS", "someone@example.test")
+    monkeypatch.setenv("GMAIL_APP_PASSWORD", "a-perfectly-good-smtp-secret")
+    elsewhere = _replace(wired, email=_replace(wired.email, smtp_host="smtp.fastmail.com"))
+    assert email_smtp.credential_problem(elsewhere) is None
+    assert email_smtp.credential_problem(wired) is not None
