@@ -1,0 +1,172 @@
+# Where openings are read from. Every source is typed by `kind`, and every kind
+# is an adapter in radar/sources/.
+#
+# Fields
+#   id        stable slug, used in the seen-store and in per-source caps
+#   name      shown as the attribution on each opening
+#   kind      which adapter reads it (workday, greenhouse, lever, rss,
+#             careerjet, jooble, adzuna)
+#   url       what the adapter fetches; for `workday`, paste the careers page
+#             URL exactly as it appears in a browser and the adapter derives
+#             the JSON endpoint from it
+#   company   attribution for boards that carry one employer
+#   query     search terms, for the kinds that accept a query
+#   enabled   set false to mute a source without deleting it
+#
+# ---------------------------------------------------------------------------
+# IMPORTANT, and the reason so many entries below are marked `unverified`:
+# the sandbox this project was written in blocks outbound access to job-board
+# hosts, so no URL here could be checked as it was written. The runner has open
+# egress and can. Before trusting the radar, run once:
+#
+#     Actions → VP role radar → Run workflow → mode: check-sources
+#
+# It fetches every enabled source and prints what came back. Fix or disable
+# whatever it reports dead. A wrong Workday tenant is the likeliest failure and
+# the easiest fix — see the note above the Workday block.
+# ---------------------------------------------------------------------------
+
+sources:
+
+  # ------------------------------------------------------------- Workday
+  # The large multinational insurers hiring across Asia and the Gulf mostly run
+  # Workday, which serves a public JSON search endpoint that needs no key and
+  # no login.
+  #
+  # To fix or add one: open the company's careers site, search any job, and
+  # copy the URL from the address bar — it looks like
+  #     https://<tenant>.wd3.myworkdayjobs.com/en-US/<SiteName>
+  # Paste that whole thing as `url`. The adapter turns it into the JSON
+  # endpoint itself, so there is nothing else to work out.
+  #
+  # The tenant/site pairs below are best guesses at the published pattern and
+  # are exactly what `check-sources` is for.
+
+  - id: workday-aia
+    name: AIA Group
+    kind: workday
+    url: https://aia.wd3.myworkdayjobs.com/en-US/AIACareers
+    company: AIA
+    query: key account
+    enabled: true          # unverified — confirm with check-sources
+
+  - id: workday-prudential
+    name: Prudential plc
+    kind: workday
+    url: https://prudential.wd3.myworkdayjobs.com/en-US/Prudential_Careers
+    company: Prudential plc
+    query: partnership distribution
+    enabled: true          # unverified — confirm with check-sources
+
+  - id: workday-manulife
+    name: Manulife / John Hancock
+    kind: workday
+    url: https://manulife.wd3.myworkdayjobs.com/en-US/MFCJH_Jobs
+    company: Manulife
+    query: bancassurance
+    enabled: true          # unverified — confirm with check-sources
+
+  - id: workday-sunlife
+    name: Sun Life
+    kind: workday
+    url: https://sunlife.wd3.myworkdayjobs.com/en-US/Experienced-Jobs
+    company: Sun Life
+    query: distribution partnership
+    enabled: true          # unverified — confirm with check-sources
+
+  - id: workday-metlife
+    name: MetLife
+    kind: workday
+    url: https://metlife.wd5.myworkdayjobs.com/en-US/MetLife_Careers
+    company: MetLife
+    query: key account
+    enabled: true          # unverified — confirm with check-sources
+
+  - id: workday-zurich
+    name: Zurich Insurance
+    kind: workday
+    url: https://zurich.wd3.myworkdayjobs.com/en-US/Zurich_Careers
+    company: Zurich
+    query: distribution
+    enabled: true          # unverified — confirm with check-sources
+
+  # ------------------------------------------------- Greenhouse and Lever
+  # Both serve public board JSON with no key. Insurtechs and the newer digital
+  # insurers use them; the traditional life insurers largely do not, which is
+  # why nothing is enabled here yet.
+  #
+  # Greenhouse: the board token is the last path segment of
+  #     https://boards.greenhouse.io/<token>
+  # Lever: the company slug from
+  #     https://jobs.lever.co/<slug>
+  #
+  # - id: greenhouse-example
+  #   name: Example Insurer
+  #   kind: greenhouse
+  #   url: https://boards.greenhouse.io/exampleinsurer
+  #   company: Example Insurer
+  #   enabled: true
+
+  # -------------------------------------------------------------- RSS
+  # Any board that genuinely publishes a jobs feed can be read here — the
+  # adapter is the same RSS/Atom parser the BFSI digest bot uses. Add one as:
+  #
+  # - id: some-board-rss
+  #   name: Some Board
+  #   kind: rss
+  #   url: https://example.com/jobs.rss
+  #   enabled: true
+
+  # --------------------------------------------------- keyed aggregators
+  # These three are the ones that actually reach Naukri, Bayt, GulfTalent and
+  # the rest of the Indian and Gulf market. Each needs a free key, and each
+  # stays switched off — reporting "no key" rather than failing — until one is
+  # present in the environment. See .env.example for where to get them.
+  #
+  # `query` is left empty on purpose: these adapters run every phrase in
+  # profile.yaml's `queries` list, so the search terms live in one place.
+
+  - id: careerjet-india
+    name: Careerjet · India
+    kind: careerjet
+    url: https://public.api.careerjet.net/search
+    locale: en_IN
+    location: India
+    enabled: false         # set true once CAREERJET_AFFID is set
+
+  - id: careerjet-uae
+    name: Careerjet · UAE
+    kind: careerjet
+    url: https://public.api.careerjet.net/search
+    locale: en_AE
+    location: United Arab Emirates
+    enabled: false         # set true once CAREERJET_AFFID is set
+
+  - id: careerjet-singapore
+    name: Careerjet · Singapore
+    kind: careerjet
+    url: https://public.api.careerjet.net/search
+    locale: en_SG
+    location: Singapore
+    enabled: false         # set true once CAREERJET_AFFID is set
+
+  - id: jooble-india
+    name: Jooble · India
+    kind: jooble
+    url: https://in.jooble.org/api
+    location: India
+    enabled: false         # set true once JOOBLE_API_KEY is set
+
+  - id: jooble-uae
+    name: Jooble · UAE
+    kind: jooble
+    url: https://ae.jooble.org/api
+    location: United Arab Emirates
+    enabled: false         # set true once JOOBLE_API_KEY is set
+
+  - id: adzuna-india
+    name: Adzuna · India
+    kind: adzuna
+    url: https://api.adzuna.com/v1/api/jobs/in/search/1
+    location: India
+    enabled: false         # set true once ADZUNA_APP_ID and ADZUNA_APP_KEY are set
