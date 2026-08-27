@@ -63,6 +63,35 @@ state:
   path: state/seen.json
   retention_days: 14
 
+# Share prices carried alongside the news. Optional — delete the block and the
+# brief goes back to being news only.
+#
+# A price on its own invites you to guess why it moved, so each entry is printed
+# with the day's headlines that name the same company. The bot does not write
+# the interpretation: it has no model, and a confidently wrong "implication" is
+# worse than none. It puts the number and the news side by side.
+#
+# `symbol` is as the quote service knows it — NSE tickers take a .NS suffix,
+# BSE .BO. `match` is what a headline would actually call the company, and is
+# what links a price to a story; it defaults to `name`, which is often too
+# narrow (the press writes "Max Life" far more often than "Max Financial").
+watchlist:
+  - symbol: MFSL.NS
+    name: Max Financial Services
+    match: [Max Financial, Max Life, Axis Max Life, MFSL]
+  - symbol: HDFCLIFE.NS
+    name: HDFC Life
+    match: [HDFC Life]
+  - symbol: SBILIFE.NS
+    name: SBI Life
+    match: [SBI Life]
+  - symbol: LICI.NS
+    name: LIC
+    match: [LIC, Life Insurance Corporation]
+  - symbol: ICICIPRULI.NS
+    name: ICICI Prudential Life
+    match: [ICICI Prudential Life, ICICI Pru Life]
+
 delivery:
   telegram:
     # Off: the brief goes to e-mail only. Everything below still works — flip

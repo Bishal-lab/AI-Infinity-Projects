@@ -159,6 +159,9 @@ sections:
       - ICICI Prudential Life
       - Axis Max Life
       - Max Life
+      # The listed holding company. Headlines about the group's regulatory and
+      # corporate news name this rather than the insurer underneath it.
+      - Max Financial
       - Bajaj Allianz Life
       - Tata AIA
       - Kotak Life

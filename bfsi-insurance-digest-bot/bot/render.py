@@ -28,6 +28,37 @@ _RULE = "#e3e8ee"
 _CANVAS = "#f4f6f8"
 
 
+# Semantic, and deliberately not the accent: a price moving is a different kind
+# of fact from a section heading, and must not read as one.
+_UP = "#127a3d"
+_DOWN = "#b3261e"
+
+
+def _pct(value: float | None) -> str:
+    """A signed percentage, or an em dash when there is nothing to show."""
+    if value is None:
+        return "—"
+    return f"{value:+.2f}%"
+
+
+def _price(quote) -> str:
+    symbol = {"INR": "₹"}.get(quote.currency, "")
+    if symbol:
+        return f"{symbol}{quote.price:,.2f}"
+    return f"{quote.price:,.2f}{(' ' + quote.currency) if quote.currency else ''}"
+
+
+def _quote_line(quote) -> str:
+    """"Max Financial Services  ₹1,234.50  +1.20%  (1mo +4.10%)", as plain text."""
+    if not quote.ok:
+        return f"{quote.entry.name} — price unavailable ({quote.error})"
+    parts = [quote.entry.name, _price(quote), _pct(quote.day_change_pct)]
+    month = quote.month_change_pct
+    if month is not None:
+        parts.append(f"(1mo {_pct(month)})")
+    return "  ".join(parts)
+
+
 def _esc(value: str) -> str:
     return html.escape(value or "", quote=True)
 
@@ -115,6 +146,10 @@ def render_telegram(digest: Digest, config: Config) -> list[str]:
     if digest.is_empty:
         blocks.append(("item", _esc(_empty_note(digest))))
     else:
+        if digest.quotes:
+            blocks.append(("heading", "📈 <b>WATCHLIST</b>"))
+            for quote in digest.quotes:
+                blocks.append(("item", _telegram_quote(quote)))
         for section in digest.sections:
             blocks.append(
                 ("heading", f"{section.emoji} <b>{_esc(section.title.upper())}</b>".strip())
@@ -155,6 +190,25 @@ def render_telegram(digest: Digest, config: Config) -> list[str]:
         else:
             messages.append(f"<i>{footer}</i>")
     return messages
+
+
+def _telegram_quote(quote) -> str:
+    if not quote.ok:
+        return f"{_esc(quote.entry.name)} — <i>price unavailable</i>"
+    arrow = {"up": "▲", "down": "▼"}.get(quote.direction, "·")
+    line = (
+        f"{arrow} <b>{_esc(quote.entry.name)}</b> {_esc(_price(quote))} "
+        f"{_esc(_pct(quote.day_change_pct))}"
+    )
+    month = quote.month_change_pct
+    if month is not None:
+        line += f" <i>(1mo {_esc(_pct(month))})</i>"
+    for article in quote.stories[:2]:
+        line += (
+            f'\n   ↳ <a href="{_esc(article.url)}">'
+            f"{_esc(truncate(article.title, 70))}</a>"
+        )
+    return line
 
 
 def _telegram_item(index: int, article: Article, zone, settings) -> str:
@@ -208,6 +262,7 @@ def render_email_html(digest: Digest, config: Config) -> str:
     else:
         if digest.total_items > 3:
             parts.append(_html_contents(digest))
+        parts.append(_html_watchlist(digest))
         for section in digest.sections:
             parts.append(_html_section(section, zone, limit))
 
@@ -218,6 +273,59 @@ def render_email_html(digest: Digest, config: Config) -> str:
         f"</table></td></tr></table></body></html>"
     )
     return "".join(parts)
+
+
+def _html_watchlist(digest: Digest) -> str:
+    """The price strip, above the news.
+
+    Each row carries the day move and, underneath, the headlines from this very
+    brief that name the company — which is the only reason a price belongs in a
+    news e-mail at all.
+    """
+    quotes = [q for q in digest.quotes if q.ok or q.error]
+    if not quotes:
+        return ""
+
+    font = ("-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,"
+            "Helvetica,Arial,sans-serif")
+    rows = [
+        f'<tr><td style="padding:18px 26px 4px;">'
+        f'<div style="font:600 12px/1.4 {font};letter-spacing:.09em;'
+        f'text-transform:uppercase;color:{_ACCENT};">📈 Watchlist</div></td></tr>'
+    ]
+
+    for quote in quotes:
+        if not quote.ok:
+            rows.append(
+                f'<tr><td style="padding:8px 26px 12px;border-bottom:1px solid {_RULE};'
+                f'font:400 13px/1.5 {font};color:{_MUTED};">'
+                f"{_esc(quote.entry.name)} — price unavailable</td></tr>"
+            )
+            continue
+
+        colour = {"up": _UP, "down": _DOWN}.get(quote.direction, _MUTED)
+        month = quote.month_change_pct
+        trail = (
+            f'<span style="color:{_MUTED};"> &nbsp;1mo {_esc(_pct(month))}</span>'
+            if month is not None else ""
+        )
+        stories = "".join(
+            f'<div style="font:400 13px/1.5 {font};color:{_MUTED};padding-top:3px;">'
+            f'↳ <a href="{_esc(article.url)}" style="color:{_MUTED};">'
+            f"{_esc(truncate(article.title, 88))}</a></div>"
+            for article in quote.stories[:3]
+        )
+        rows.append(
+            f'<tr><td style="padding:8px 26px 12px;border-bottom:1px solid {_RULE};">'
+            f'<span style="font:600 15px/1.5 {font};color:{_INK};">'
+            f"{_esc(quote.entry.name)}</span>"
+            f'<span style="font:400 15px/1.5 {font};color:{_INK};"> &nbsp;'
+            f"{_esc(_price(quote))}</span>"
+            f'<span style="font:600 15px/1.5 {font};color:{colour};"> &nbsp;'
+            f"{_esc(_pct(quote.day_change_pct))}</span>{trail}"
+            f"{stories}</td></tr>"
+        )
+    return "".join(rows)
 
 
 def _preheader(digest: Digest) -> str:
@@ -285,6 +393,15 @@ def render_email_text(digest: Digest, config: Config) -> str:
     if digest.is_empty:
         lines.append(_empty_note(digest))
     else:
+        if digest.quotes:
+            lines.append("WATCHLIST")
+            lines.append("-" * 9)
+            for quote in digest.quotes:
+                lines.append(_quote_line(quote))
+                for article in quote.stories[:3]:
+                    lines.append(f"   -> {truncate(article.title, 88)}")
+            lines.append("")
+            lines.append("")
         for section in digest.sections:
             lines.append(f"{section.title.upper()}")
             lines.append("-" * len(section.title))
