@@ -1,0 +1,1539 @@
+<title>Flight to Success</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Light is the base layer. Dark redefines only tokens, under both the OS
+   media query and the viewer's explicit stamp, so the toggle wins either way. */
+:root {
+  color-scheme: light;
+  --page:#eef1f5; --surface:#fbfcfd; --raised:#f4f7fa;
+  --ink:#0d1219; --ink-2:#4d5765; --muted:#7c8695;
+  --rule:#dfe4ea; --rule-2:#c3ccd6; --ring:rgba(13,18,25,.09);
+  --accent:#2a78d6; --accent-soft:#e4eefb;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+  --o1:#86b6ef; --o2:#5598e7; --o3:#2a78d6; --o4:#1c5cab; --o5:#104281;
+  --grid:#e6eaef;
+  --warn:#fab219; --await:#ec835a; --good:#0ca30c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page:#0d1013; --surface:#16191c; --raised:#1d2126;
+    --ink:#f2f5f8; --ink-2:#bcc4cd; --muted:#868f9a;
+    --rule:#272c32; --rule-2:#3a424b; --ring:rgba(255,255,255,.10);
+    --accent:#3987e5; --accent-soft:#15263c;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+    --o1:#b7d3f6; --o2:#86b6ef; --o3:#5598e7; --o4:#2a78d6; --o5:#1c5cab;
+    --grid:#22272d;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page:#0d1013; --surface:#16191c; --raised:#1d2126;
+  --ink:#f2f5f8; --ink-2:#bcc4cd; --muted:#868f9a;
+  --rule:#272c32; --rule-2:#3a424b; --ring:rgba(255,255,255,.10);
+  --accent:#3987e5; --accent-soft:#15263c;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+  --o1:#b7d3f6; --o2:#86b6ef; --o3:#5598e7; --o4:#2a78d6; --o5:#1c5cab;
+  --grid:#22272d;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin:0; background:var(--page); color:var(--ink);
+  font-family:Archivo, "Helvetica Neue", Arial, sans-serif;
+  font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap { max-width:1180px; margin:0 auto; padding:34px 22px 80px; }
+
+/* ------------------------------------------------------------- header --- */
+.top { display:flex; flex-wrap:wrap; gap:20px; align-items:flex-end;
+  justify-content:space-between; padding-bottom:20px;
+  border-bottom:2px solid var(--ink); }
+.eyebrow { font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--accent);
+  font-weight:500; display:block; margin-bottom:6px; }
+h1 { font-size:clamp(30px,5vw,46px); line-height:1.02; margin:0;
+  font-weight:700; letter-spacing:-.022em; text-wrap:balance; }
+.period { margin:8px 0 0; color:var(--ink-2); font-size:14px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace; }
+.privacy { display:flex; gap:9px; align-items:flex-start; max-width:290px;
+  font-size:12.5px; line-height:1.45; color:var(--ink-2);
+  border-left:2px solid var(--rule-2); padding-left:12px; }
+.privacy svg { flex:none; width:14px; height:14px; margin-top:2px; stroke:var(--muted); }
+
+/* ------------------------------------------------------------- intake --- */
+.intake { margin-top:24px; background:var(--surface); border:1px solid var(--rule);
+  border-radius:10px; padding:22px; box-shadow:0 1px 2px var(--ring); }
+.drop { border:1.5px dashed var(--rule-2); border-radius:8px; padding:26px 20px;
+  text-align:center; transition:border-color .15s, background .15s; }
+.drop.over { border-color:var(--accent); background:var(--accent-soft); }
+.drop.busy { opacity:.55; }
+.intake.loaded .drop { padding:12px 15px; text-align:left; }
+.intake.loaded .drop p { display:none; }
+.drop p { margin:10px 0 0; color:var(--muted); font-size:13px; }
+.btn { font:inherit; font-weight:600; font-size:14px; cursor:pointer;
+  background:var(--ink); color:var(--surface); border:0; border-radius:6px;
+  padding:9px 17px; }
+.btn:hover { background:var(--accent); }
+.btn:focus-visible, .tile:focus-visible, select:focus-visible {
+  outline:2px solid var(--accent); outline-offset:2px; }
+.sources { list-style:none; margin:18px 0 0; padding:0;
+  display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(min(232px,100%),1fr)); }
+.src { display:flex; gap:9px; align-items:flex-start; font-size:13px;
+  padding:10px 12px; border:1px solid var(--rule); border-radius:7px;
+  background:var(--raised); color:var(--muted); }
+.src.on { color:var(--ink-2); border-color:var(--rule-2); }
+.src strong { display:block; font-weight:600; font-size:13.5px; color:var(--ink); }
+.src-file { font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11.5px;
+  display:block; margin-top:1px; }
+.count { font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--muted);
+  display:block; margin-bottom:10px; }
+.log { margin:14px 0 0; }
+.log p { margin:0; font-size:12.5px; font-family:"IBM Plex Mono", ui-monospace, monospace;
+  color:var(--ink-2); display:flex; gap:8px; align-items:baseline; }
+.log-err { color:var(--await); }
+
+.dot { font-size:9px; line-height:1.9; flex:none; }
+.dot-ok { color:var(--good); } .dot-partial { color:var(--warn); }
+.dot-blocked { color:var(--await); }
+
+/* ------------------------------------------------------------ filters --- */
+.filters { display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+  margin:26px 0 0; padding:13px 16px; background:var(--surface);
+  border:1px solid var(--rule); border-radius:10px; }
+.filters label { font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-right:4px; }
+select { font:inherit; font-size:13.5px; color:var(--ink); background:var(--raised);
+  border:1px solid var(--rule-2); border-radius:6px; padding:6px 9px; cursor:pointer; }
+.link { font:inherit; font-size:13px; background:none; border:0; cursor:pointer;
+  color:var(--accent); text-decoration:underline; text-underline-offset:3px;
+  padding:4px; margin-left:auto; }
+.seg-note { flex-basis:100%; margin:2px 0 0; font-size:12.5px; color:var(--ink-2); }
+
+/* --------------------------------------------------------------- bands -- */
+.band { margin-top:42px; }
+.band-head { display:flex; align-items:baseline; gap:14px; margin-bottom:16px; }
+.band-head h2 { font-size:19px; font-weight:600; margin:0; letter-spacing:-.01em; }
+.band-head .rule { flex:1; height:1px; background:var(--rule-2); }
+.band-head .hint { font-size:12.5px; color:var(--muted); }
+.card.wide { grid-column:1 / -1; }
+.card.wide .card-body svg { max-width:880px; }
+.grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(min(430px,100%),1fr)); }
+
+/* ---------------------------------------------------------------- kpis -- */
+.kpi-grid { display:grid; gap:10px;
+  grid-template-columns:repeat(auto-fit,minmax(min(196px,100%),1fr)); }
+.tile { text-align:left; font:inherit; cursor:pointer; position:relative;
+  background:var(--surface); border:1px solid var(--rule); border-radius:9px;
+  padding:14px 15px 13px; display:flex; flex-direction:column; gap:1px;
+  box-shadow:0 1px 2px var(--ring); transition:border-color .12s, transform .12s; }
+.tile:hover { border-color:var(--rule-2); transform:translateY(-1px); }
+.tile.open { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+.tile-n { font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:10.5px;
+  color:var(--muted); letter-spacing:.08em; }
+.tile-label { font-size:12.5px; font-weight:600; color:var(--ink-2);
+  line-height:1.25; min-height:2.5em; }
+.tile-value { font-size:29px; font-weight:700; letter-spacing:-.03em;
+  line-height:1.15; margin-top:5px; color:var(--ink); }
+.tile-value small { font-size:14px; font-weight:500; color:var(--muted);
+  letter-spacing:0; }
+.tile-den { font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11px;
+  color:var(--muted); line-height:1.4; margin-top:3px; }
+.chip { display:inline-flex; align-items:center; gap:5px; margin-top:9px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:10px;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--ink-2);
+  border:1px solid var(--rule-2); border-radius:20px; padding:2px 8px;
+  align-self:flex-start; }
+.working { margin-top:12px; background:var(--surface); border:1px solid var(--accent);
+  border-radius:9px; padding:16px 18px; }
+.working h4 { margin:0 0 6px; font-size:14px; font-weight:600;
+  font-family:"IBM Plex Mono", ui-monospace, monospace; letter-spacing:.02em; }
+.working p { margin:0 0 8px; font-size:13.5px; color:var(--ink-2); max-width:74ch; }
+.working p:last-child { margin-bottom:0; }
+.working-den { font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:12.5px;
+  color:var(--ink) !important; }
+.working-seg { border-left:2px solid var(--warn); padding-left:10px; }
+
+/* --------------------------------------------------------------- cards -- */
+.card { background:var(--surface); border:1px solid var(--rule); border-radius:10px;
+  padding:18px 20px 20px; box-shadow:0 1px 2px var(--ring);
+  display:flex; flex-direction:column; }
+.card-head h3 { margin:0; font-size:15.5px; font-weight:600; letter-spacing:-.005em; }
+.card-head .sub { margin:4px 0 0; font-size:12.5px; color:var(--muted);
+  line-height:1.45; max-width:56ch; }
+.card-body { margin-top:14px; display:flex; flex-direction:column; gap:10px; }
+.card-body svg { width:100%; height:auto; display:block; overflow:visible; }
+.foot { margin:2px 0 0; font-size:12.5px; color:var(--ink-2); line-height:1.5;
+  max-width:62ch; }
+.hero { display:flex; align-items:baseline; gap:8px; }
+.hero-v { font-size:56px; font-weight:700; letter-spacing:-.04em; line-height:1; }
+.hero-u { font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:15px;
+  color:var(--muted); }
+
+.await { border:1.5px dashed var(--rule-2); border-radius:8px; padding:16px;
+  background:var(--raised); }
+.await-h { margin:0; font-size:13.5px; font-weight:600; display:flex; gap:8px;
+  align-items:baseline; font-family:"IBM Plex Mono", ui-monospace, monospace; }
+.await-c { margin:7px 0 0; font-size:12px; color:var(--muted); line-height:1.6;
+  font-family:"IBM Plex Mono", ui-monospace, monospace; }
+
+/* --------------------------------------------------------- chart chrome - */
+.cat { font-size:12.5px; fill:var(--ink-2); font-family:Archivo, sans-serif; }
+.lbl { font-size:12.5px; fill:var(--ink-2); font-family:"IBM Plex Mono", monospace;
+  font-weight:500; }
+.ax { font-size:11.5px; fill:var(--muted); font-family:"IBM Plex Mono", monospace; }
+.gridline { stroke:var(--grid); stroke-width:1; }
+.legend { display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--ink-2); }
+.legend span { display:inline-flex; align-items:center; gap:6px; }
+.legend i { width:10px; height:10px; border-radius:2px; display:inline-block; }
+
+.scroll { overflow-x:auto; }
+.tbl { border-collapse:collapse; width:100%; font-size:13px; }
+.tbl th { text-align:left; font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:10.5px; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--muted); font-weight:500; padding:0 12px 7px 0;
+  border-bottom:1px solid var(--rule-2); white-space:nowrap; }
+.tbl td { padding:7px 12px 7px 0; border-bottom:1px solid var(--rule);
+  color:var(--ink-2); white-space:nowrap; }
+.tbl td.n { font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-variant-numeric:tabular-nums; color:var(--ink); }
+.tbl th:not(:first-child) { text-align:right; }
+.tbl td.n { text-align:right; }
+
+.tip { position:fixed; pointer-events:none; opacity:0; z-index:9;
+  background:var(--ink); color:var(--page); font-size:12.5px; line-height:1.45;
+  padding:8px 11px; border-radius:6px; max-width:250px;
+  transition:opacity .1s; box-shadow:0 4px 14px rgba(0,0,0,.22); }
+.tip b { font-family:"IBM Plex Mono", ui-monospace, monospace; }
+
+footer { margin-top:52px; padding-top:18px; border-top:1px solid var(--rule);
+  font-size:12.5px; color:var(--muted); max-width:74ch; }
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <span class="eyebrow">Learning &amp; communication campaign</span>
+      <h1>Flight to Success</h1>
+      <p class="period" id="period">Drop the five exports below to begin</p>
+    </div>
+    <p class="privacy">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"
+        aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"></rect>
+        <path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
+      <span>These files carry named employee records. Everything is read inside this
+      browser tab — nothing is uploaded, stored, or sent anywhere.</span>
+    </p>
+  </header>
+
+  <section class="intake" id="intake">
+    <span class="count" id="count"></span>
+    <div class="drop" id="drop">
+      <input type="file" id="file" accept=".xlsx" multiple hidden>
+      <button class="btn" id="pick" type="button">Choose the export files</button>
+      <p>or drop them here — any number of .xlsx at once, in any order</p>
+    </div>
+    <ul class="sources" id="sources"></ul>
+    <div class="log" id="log" hidden></div>
+  </section>
+
+  <div id="dash" hidden>
+    <section class="filters" id="filters" hidden>
+      <label for="f-channel">Filter</label>
+      <select id="f-channel"></select>
+      <select id="f-location"></select>
+      <select id="f-path"></select>
+      <button class="link" id="f-reset" type="button">Clear filters</button>
+      <p class="seg-note" id="seg-note" hidden>Channel, location and learning path
+        exist only on the two employee reports. The campaign exports arrive
+        pre-aggregated, so the communication tiles below stay unfiltered and say so.</p>
+    </section>
+
+    <section class="band">
+      <div class="band-head"><h2>Key performance indicators</h2><span class="rule"></span>
+        <span class="hint">Select any tile to see how it is computed</span></div>
+      <div class="kpi-grid" id="kpi-grid"></div>
+      <div class="working" id="kpi-working" hidden></div>
+    </section>
+
+    <section class="band">
+      <div class="band-head"><h2>Reach and response</h2><span class="rule"></span>
+        <span class="hint">Email · WhatsApp · Viva Engage</span></div>
+      <div class="grid" id="band-comms"></div>
+    </section>
+
+    <section class="band">
+      <div class="band-head"><h2>Training coverage and attendance</h2><span class="rule"></span>
+        <span class="hint">LMS · Teams webinars</span></div>
+      <div class="grid" id="band-learn"></div>
+    </section>
+
+    <section class="band">
+      <div class="band-head"><h2>Across the channels</h2><span class="rule"></span>
+        <span class="hint">The two employee reports, joined</span></div>
+      <div class="grid" id="band-cross"></div>
+    </section>
+  </div>
+
+  <footer>
+    Sources are recognised by the columns they carry, not by filename — rename a file
+    and it still lands in the right place. Rates are computed from raw counts rather
+    than by averaging the percentage columns, so a small campaign never weighs the
+    same as a large one.
+  </footer>
+</div>
+<div class="tip" id="tip" role="status"></div>
+
+<script>
+/* Minimal .xlsx reader — no library, no network.
+ *
+ * An .xlsx is a ZIP of XML. The browser can open both natively:
+ * DecompressionStream('deflate-raw') inflates the entries, and the worksheet
+ * XML is regular enough to scan with a tokeniser. (DOMParser would also work,
+ * but building a DOM for a 7,000-row sheet costs far more than reading the
+ * handful of tag shapes that actually occur.)
+ *
+ * Identical code runs in Node 18+ and in the browser, which is how it gets
+ * tested against real generated files before it ever reaches a page.
+ */
+
+const td = new TextDecoder();
+
+/* ------------------------------------------------------------------ ZIP --- */
+
+async function inflateRaw(bytes) {
+  const stream = new Blob([bytes]).stream().pipeThrough(
+    new DecompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/** Entries of a ZIP, read from the central directory backwards from the EOCD. */
+async function unzip(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const view = new DataView(buffer);
+
+  // The end-of-central-directory record sits in the last 64KB, after a
+  // variable-length comment, so scan back for its signature.
+  let eocd = -1;
+  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65558); i--) {
+    if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error('not a zip file (no end-of-central-directory record)');
+
+  let count = view.getUint16(eocd + 10, true);
+  let offset = view.getUint32(eocd + 16, true);
+
+  // ZIP64: the 32-bit fields saturate and the real values live in a separate
+  // record. Large exports genuinely reach this.
+  if (offset === 0xffffffff || count === 0xffff) {
+    for (let i = eocd - 20; i >= 0; i--) {
+      if (view.getUint32(i, true) === 0x07064b50) {
+        const z64 = Number(view.getBigUint64(i + 8, true));
+        count = Number(view.getBigUint64(z64 + 32, true));
+        offset = Number(view.getBigUint64(z64 + 48, true));
+        break;
+      }
+    }
+  }
+
+  const entries = new Map();
+  let p = offset;
+  for (let i = 0; i < count; i++) {
+    if (view.getUint32(p, true) !== 0x02014b50) break;
+    const method = view.getUint16(p + 10, true);
+    const compressedSize = view.getUint32(p + 20, true);
+    const nameLen = view.getUint16(p + 28, true);
+    const extraLen = view.getUint16(p + 30, true);
+    const commentLen = view.getUint16(p + 32, true);
+    const localOffset = view.getUint32(p + 42, true);
+    const name = td.decode(bytes.subarray(p + 46, p + 46 + nameLen));
+    entries.set(name, { method, compressedSize, localOffset });
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+
+  const files = new Map();
+  for (const [name, meta] of entries) {
+    // The local header repeats the name and extra fields, at its own lengths.
+    const lh = meta.localOffset;
+    if (view.getUint32(lh, true) !== 0x04034b50) continue;
+    const start = lh + 30 + view.getUint16(lh + 26, true) + view.getUint16(lh + 28, true);
+    const raw = bytes.subarray(start, start + meta.compressedSize);
+    files.set(name, meta.method === 0 ? raw : await inflateRaw(raw));
+  }
+  return files;
+}
+
+/* ------------------------------------------------------------------ XML --- */
+
+const ENTITIES = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
+
+function decodeXml(text) {
+  if (text.indexOf('&') === -1) return text;
+  return text.replace(/&(#x?[0-9a-fA-F]+|[a-z]+);/g, (whole, code) => {
+    if (code[0] === '#') {
+      const n = code[1] === 'x' ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
+      return Number.isFinite(n) ? String.fromCodePoint(n) : whole;
+    }
+    return ENTITIES[code] ?? whole;
+  });
+}
+
+/** All <t> text inside a chunk, concatenated — a shared string may be split
+ *  across several runs when part of it is styled differently. */
+function textOf(chunk) {
+  let out = '';
+  const re = /<t(?:\s[^>]*)?>([\s\S]*?)<\/t>|<t\s[^>]*\/>/g;
+  let m;
+  while ((m = re.exec(chunk))) out += decodeXml(m[1] ?? '');
+  return out;
+}
+
+function sharedStrings(files) {
+  const raw = files.get('xl/sharedStrings.xml');
+  if (!raw) return [];
+  const xml = td.decode(raw);
+  const out = [];
+  const re = /<si(?:\s[^>]*)?>([\s\S]*?)<\/si>|<si\s*\/>/g;
+  let m;
+  while ((m = re.exec(xml))) out.push(m[1] === undefined ? '' : textOf(m[1]));
+  return out;
+}
+
+/* Which style indexes are dates — needed because a date is just a number
+ * wearing a date number-format. */
+function dateStyles(files) {
+  const raw = files.get('xl/styles.xml');
+  const isDate = new Set();
+  if (!raw) return isDate;
+  const xml = td.decode(raw);
+
+  // Built-in numFmtIds that mean a date or time.
+  const BUILTIN = new Set([14, 15, 16, 17, 18, 19, 20, 21, 22, 45, 46, 47]);
+  const custom = new Set();
+  const fmtRe = /<numFmt[^>]*numFmtId="(\d+)"[^>]*formatCode="([^"]*)"/g;
+  let m;
+  while ((m = fmtRe.exec(xml))) {
+    const code = decodeXml(m[2]).replace(/\[[^\]]*\]/g, '').replace(/"[^"]*"/g, '');
+    if (/[dmyhs]/i.test(code) && /[dmy]/i.test(code)) custom.add(Number(m[1]));
+  }
+
+  const cellXfs = xml.match(/<cellXfs[\s\S]*?<\/cellXfs>/);
+  if (!cellXfs) return isDate;
+  const xfRe = /<xf[^>]*numFmtId="(\d+)"[^>]*>|<xf[^>]*numFmtId="(\d+)"[^>]*\/>/g;
+  let index = 0;
+  while ((m = xfRe.exec(cellXfs[0]))) {
+    const id = Number(m[1] ?? m[2]);
+    if (BUILTIN.has(id) || custom.has(id)) isDate.add(index);
+    index++;
+  }
+  return isDate;
+}
+
+/** Excel serial -> Date. Epoch is 1899-12-30, which absorbs the 1900
+ *  leap-year bug Excel deliberately carries for Lotus compatibility. */
+function fromSerial(serial) {
+  return new Date(Math.round((serial - 25569) * 86400000));
+}
+
+const COL_RE = /^([A-Z]+)/;
+function colIndex(ref) {
+  const letters = COL_RE.exec(ref)?.[1] ?? 'A';
+  let n = 0;
+  for (let i = 0; i < letters.length; i++) n = n * 26 + (letters.charCodeAt(i) - 64);
+  return n - 1;
+}
+
+/** One worksheet as an array of arrays. */
+function readSheet(xml, strings, isDateStyle) {
+  const rows = [];
+  const rowRe = /<row[^>]*\br="(\d+)"[^>]*>([\s\S]*?)<\/row>|<row[^>]*\/>/g;
+  const cellRe = /<c\s([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
+  let rowMatch;
+  while ((rowMatch = rowRe.exec(xml))) {
+    if (rowMatch[2] === undefined) continue;
+    const cells = [];
+    let cellMatch;
+    cellRe.lastIndex = 0;
+    while ((cellMatch = cellRe.exec(rowMatch[2]))) {
+      const attrs = cellMatch[1];
+      const body = cellMatch[2] ?? '';
+      const ref = /\br="([A-Z]+\d+)"/.exec(attrs)?.[1] ?? '';
+      const type = /\bt="([^"]+)"/.exec(attrs)?.[1] ?? 'n';
+      const style = Number(/\bs="(\d+)"/.exec(attrs)?.[1] ?? -1);
+      const at = ref ? colIndex(ref) : cells.length;
+
+      let value = null;
+      if (type === 's') {
+        const i = Number(/<v>([^<]*)<\/v>/.exec(body)?.[1]);
+        value = strings[i] ?? '';
+      } else if (type === 'inlineStr') {
+        value = textOf(body);
+      } else if (type === 'str') {
+        value = decodeXml(/<v>([\s\S]*?)<\/v>/.exec(body)?.[1] ?? '');
+      } else if (type === 'b') {
+        value = /<v>1<\/v>/.test(body);
+      } else if (type === 'e') {
+        value = null;                       // #REF!, #DIV/0! — treat as empty
+      } else {
+        const raw = /<v>([^<]*)<\/v>/.exec(body)?.[1];
+        if (raw === undefined || raw === '') {
+          // A formula cell openpyxl wrote has no cached <v> at all.
+          value = null;
+        } else {
+          const n = Number(raw);
+          value = Number.isFinite(n) ? (isDateStyle.has(style) ? fromSerial(n) : n) : raw;
+        }
+      }
+      while (cells.length < at) cells.push(null);
+      cells[at] = value;
+    }
+    rows.push(cells);
+  }
+  return rows;
+}
+
+/** Every sheet of a workbook: [{ name, rows }] */
+async function readWorkbook(buffer) {
+  const files = await unzip(buffer);
+  const strings = sharedStrings(files);
+  const isDateStyle = dateStyles(files);
+
+  // workbook.xml gives sheet names and r:id; the rels file maps r:id -> path.
+  const wbXml = td.decode(files.get('xl/workbook.xml') ?? new Uint8Array());
+  const relsXml = td.decode(files.get('xl/_rels/workbook.xml.rels') ?? new Uint8Array());
+  const rels = new Map();
+  const relRe = /<Relationship[^>]*Id="([^"]+)"[^>]*Target="([^"]+)"/g;
+  let m;
+  while ((m = relRe.exec(relsXml))) {
+    let target = m[2].replace(/^\/?xl\//, '').replace(/^\.\//, '');
+    rels.set(m[1], `xl/${target}`);
+  }
+
+  const sheets = [];
+  const sheetRe = /<sheet[^>]*name="([^"]*)"[^>]*r:id="([^"]+)"|<sheet[^>]*r:id="([^"]+)"[^>]*name="([^"]*)"/g;
+  let order = 0;
+  while ((m = sheetRe.exec(wbXml))) {
+    const name = decodeXml(m[1] ?? m[4]);
+    const rid = m[2] ?? m[3];
+    const path = rels.get(rid) ?? `xl/worksheets/sheet${++order}.xml`;
+    const raw = files.get(path);
+    if (!raw) continue;
+    sheets.push({ name, rows: readSheet(td.decode(raw), strings, isDateStyle) });
+  }
+  return sheets;
+}
+
+/** Rows -> objects keyed by the header row, with blank rows dropped. */
+function toRecords(rows) {
+  if (!rows.length) return { headers: [], records: [] };
+  const headers = (rows[0] ?? []).map(h => (h == null ? '' : String(h).trim()));
+  const records = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.every(v => v === null || v === '')) continue;
+    const record = {};
+    for (let c = 0; c < headers.length; c++) if (headers[c]) record[headers[c]] = row[c] ?? null;
+    records.push(record);
+  }
+  return { headers, records };
+}
+
+/* ============================================================== sources ==
+ * Recognised by column signature, never by filename. `02_WhatsApp` has not
+ * been supplied yet — its slot is defined so the moment the file arrives the
+ * two blocked KPIs light up with no code change. Header names are the ones
+ * the email report already uses, since a sibling export usually matches.
+ */
+const SOURCES = [
+  { id:'email', label:'Email Campaign KPI', file:'01_Email_Campaign_KPI.xlsx',
+    grain:'campaign', must:['Campaign','Delivered','Clicked','Opened'],
+    cols:'Campaign · Campaign_Date · Sent · Delivered · Bounced · Opened · Clicked' },
+  { id:'whatsapp', label:'WhatsApp Campaign KPI', file:'02_WhatsApp_Campaign_KPI.xlsx',
+    grain:'campaign', must:['Campaign','Delivered','Read'],
+    cols:'Campaign · Campaign_Date · Sent · Delivered · Read · Clicked', awaited:true },
+  { id:'webinar', label:'Webinar Attendance', file:'03_Webinar_Attendance_Employee_Wise.xlsx',
+    grain:'employee', must:['Employee_ID','Registered','Attended'],
+    cols:'Employee_ID · Channel · Location · Webinar · Registered · Attended · Duration_Min · Certificate' },
+  { id:'lms', label:'LMS Employee-wise', file:'04_LMS_Employee_Wise_Report.xlsx',
+    grain:'employee', must:['Employee_ID','Modules_Assigned','Modules_Completed'],
+    cols:'Employee_ID · Channel · Location · Learning_Path · Modules_Assigned · Modules_Completed · Assessment_Score_%' },
+  { id:'viva', label:'Viva Engage KPI', file:'05_Viva_Engage_Campaign_KPI.xlsx',
+    grain:'campaign', must:['Campaign','Community_Members','Active_Users'],
+    cols:'Campaign · Campaign_Date · Community_Members · Active_Users · Posts · Comments · Likes · Shares · Polls' },
+];
+
+/* The four decisions from the plan, made explicit here so the page can state
+ * which reading it took beside every number that depends on one. */
+const RULES = {
+  reachLabel: 'Total Deliveries',        // A — not "reach": Delivered counts messages
+  engagementNumerator: 'clicks',         // B — clicks only, one unit; Viva keeps its own tile
+  vivaDenominator: 'Community_Members',  // C — as given, but labelled for what it behaves like
+  indexWeights: { lms:0.40, attendance:0.30, assessment:0.20, certification:0.10 },  // D
+};
+
+const DATA = {};
+let FILTER = { channel:'', location:'', path:'', from:null, to:null };
+
+const $ = s => document.querySelector(s);
+const el = (t, cls, txt) => { const n = document.createElement(t);
+  if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
+
+const N = v => { const n = typeof v === 'number' ? v : parseFloat(v); return isFinite(n) ? n : 0; };
+const fmtInt = v => (v == null || !isFinite(v)) ? '—' : Math.round(v).toLocaleString('en-IN');
+const fmtPct = (v, d = 1) => (v == null || !isFinite(v)) ? '—' : (v * 100).toFixed(d) + '%';
+const fmtNum = (v, d = 1) => (v == null || !isFinite(v)) ? '—' : v.toFixed(d);
+const rate = (a, b) => b ? a / b : null;
+const asDate = v => v instanceof Date ? v : (v ? new Date(v) : null);
+const fmtDay = d => d instanceof Date && !isNaN(d)
+  ? d.toLocaleDateString('en-GB', { day:'2-digit', month:'short' }) : '—';
+const yes = v => String(v).trim().toLowerCase() === 'yes';
+
+function claim(headers, records) {
+  const have = new Set(headers);
+  for (const src of [...SOURCES].sort((a, b) => b.must.length - a.must.length)) {
+    if (src.must.every(c => have.has(c))) {
+      DATA[src.id] = (DATA[src.id] || []).concat(records);
+      return src;
+    }
+  }
+  return null;
+}
+
+async function ingest(files) {
+  const out = [];
+  for (const f of files) {
+    try {
+      const sheets = await readWorkbook(await f.arrayBuffer());
+      let hit = 0;
+      for (const sheet of sheets) {
+        const { headers, records } = toRecords(sheet.rows);
+        if (!records.length) continue;
+        const src = claim(headers, records);
+        if (src) { hit++; out.push({ file:f.name, src, n:records.length }); }
+      }
+      if (!hit) out.push({ file:f.name, error:'no sheet matched a known report' });
+    } catch (err) { out.push({ file:f.name, error:err.message }); }
+  }
+  return out;
+}
+
+/* --------------------------------------------------------------- filters --
+ * Channel, Location and Learning_Path exist only on the two employee reports.
+ * The campaign reports are already aggregated and carry no such columns, so a
+ * channel filter genuinely cannot narrow them. Rather than let a filter appear
+ * to work while silently doing nothing, `segmentable()` reports that, and the
+ * communication tiles say so on the page.
+ */
+const has = id => (DATA[id] || []).length > 0;
+const peopleFiltered = () =>
+  !!(FILTER.channel || FILTER.location || FILTER.path);
+
+function segmentable(grain) {
+  return grain === 'employee' || !peopleFiltered();
+}
+
+function employeeRows(id) {
+  let rows = DATA[id] || [];
+  if (FILTER.channel) rows = rows.filter(r => r.Channel === FILTER.channel);
+  if (FILTER.location) rows = rows.filter(r => r.Location === FILTER.location);
+  if (FILTER.path) {
+    const lms = DATA.lms || [];
+    const ok = new Set(lms.filter(r => r.Learning_Path === FILTER.path)
+      .map(r => r.Employee_ID));
+    rows = rows.filter(r => ok.has(r.Employee_ID));
+  }
+  return rows;
+}
+
+function campaignRows(id) {
+  let rows = DATA[id] || [];
+  if (FILTER.from || FILTER.to) {
+    rows = rows.filter(r => {
+      const d = asDate(r.Campaign_Date);
+      if (!d || isNaN(d)) return true;
+      if (FILTER.from && d < FILTER.from) return false;
+      if (FILTER.to && d > FILTER.to) return false;
+      return true;
+    });
+  }
+  return rows;
+}
+const sum = (rows, key) => rows.reduce((a, r) => a + N(r[key]), 0);
+
+/* ================================================================== kpis ==
+ * Every KPI returns { value, num, den, state, note } rather than a bare
+ * number. The denominator travels with the figure because most arguments
+ * about a dashboard are arguments about a denominator, and a tile that can
+ * show its own working ends them. `state` drives the chip on the tile:
+ *   ok        — computed from data that is present
+ *   partial   — computed, but a contributing source is missing
+ *   blocked   — cannot be computed at all
+ */
+
+const OK = 'ok', PARTIAL = 'partial', BLOCKED = 'blocked';
+
+const yesRows = (rows, key) => rows.filter(r => yes(r[key]));
+
+/** Distinct employees across the two people-level reports, after filtering.
+ *  This is the population every learning rate is measured against, and the
+ *  page says so — 60 employees is what was exported, not necessarily the
+ *  whole target audience. */
+function population() {
+  const ids = new Set();
+  for (const id of ['webinar', 'lms']) employeeRows(id).forEach(r => ids.add(r.Employee_ID));
+  return ids.size;
+}
+
+function kpis() {
+  const email = campaignRows('email');
+  const wa = campaignRows('whatsapp');
+  const viva = campaignRows('viva');
+  const web = employeeRows('webinar');
+  const lms = employeeRows('lms');
+
+  const waMissing = !has('whatsapp');
+  const segNote = segmentable('campaign') ? null
+    : 'Channel and location are only on the employee reports — the campaign '
+    + 'exports are pre-aggregated, so this figure is unfiltered.';
+
+  /* 1 — campaign count. Distinct names, because the same campaign appears in
+   *     both the email and the Viva export and must not be counted twice. */
+  const names = new Set();
+  [...email, ...wa, ...viva].forEach(r => r.Campaign && names.add(String(r.Campaign).trim()));
+
+  /* 2 — deliveries, deliberately not called reach: Delivered counts messages,
+   *     and five campaigns to the same list is five deliveries per person. */
+  const emailDelivered = sum(email, 'Delivered');
+  const waDelivered = sum(wa, 'Delivered');
+
+  const emailClicked = sum(email, 'Clicked');
+  const waClicked = sum(wa, 'Clicked');
+
+  /* 5 — one rate, one unit. Viva's likes and comments are interactions but
+   *     they are not clicks and have no Delivered to sit over, so they stay
+   *     in KPI 9. The mixed reading is reported beside it, not instead. */
+  const vivaEngagements = sum(viva, 'Total_Engagements');
+  const mixed = rate(emailClicked + waClicked + vivaEngagements, emailDelivered + waDelivered);
+
+  const registered = yesRows(web, 'Registered');
+  const attended = yesRows(web, 'Attended');
+  const certified = yesRows(web, 'Certificate');
+  const pop = population();
+
+  const assigned = sum(lms, 'Modules_Assigned');
+  const completed = sum(lms, 'Modules_Completed');
+
+  const scored = lms.filter(r => isFinite(N(r['Assessment_Score_%'])) && r['Assessment_Score_%'] != null);
+  const assessment = scored.length ? sum(scored, 'Assessment_Score_%') / scored.length / 100 : null;
+
+  const members = sum(viva, 'Community_Members');
+  const active = sum(viva, 'Active_Users');
+
+  const lmsRate = rate(completed, assigned);
+  const attendRate = rate(attended.length, registered.length);
+  const certRate = rate(certified.length, attended.length);
+
+  /* 10 — the composite. Components that are absent drop out and the weights
+   *      renormalise over what remains, so the index never silently treats a
+   *      missing source as a zero. */
+  const parts = [
+    { id:'lms', label:'Learning completion', weight:RULES.indexWeights.lms, value:lmsRate },
+    { id:'attendance', label:'Webinar attendance', weight:RULES.indexWeights.attendance, value:attendRate },
+    { id:'assessment', label:'Assessment score', weight:RULES.indexWeights.assessment, value:assessment },
+    { id:'certification', label:'Certification', weight:RULES.indexWeights.certification, value:certRate },
+  ];
+  const live = parts.filter(p => p.value != null && isFinite(p.value));
+  const weightSum = live.reduce((a, p) => a + p.weight, 0);
+  const index = weightSum
+    ? live.reduce((a, p) => a + p.weight * p.value, 0) / weightSum * 100 : null;
+
+  return {
+    parts, live, weightSum,
+    list: [
+      { n:1, label:'Campaigns Running', value:names.size, kind:'int',
+        den:`across ${[has('email') && 'email', has('whatsapp') && 'WhatsApp', has('viva') && 'Viva']
+          .filter(Boolean).join(' + ') || 'no source'}`,
+        state: waMissing ? PARTIAL : OK,
+        note:'Distinct campaign names. The same campaign appears in more than one export and is counted once.' },
+
+      { n:2, label: RULES.reachLabel, value:emailDelivered + waDelivered, kind:'int',
+        den: waMissing ? 'email only — WhatsApp not loaded' : 'email + WhatsApp',
+        state: waMissing ? PARTIAL : OK,
+        note:'Messages delivered, not people reached. Neither export carries a recipient list, so unique reach cannot be derived — someone who received all five campaigns is counted five times.' },
+
+      { n:3, label:'Email Engagement Rate', value:rate(emailClicked, emailDelivered), kind:'pct',
+        den:`${fmtInt(emailClicked)} clicked ÷ ${fmtInt(emailDelivered)} delivered`,
+        state: has('email') ? OK : BLOCKED,
+        note:'Clicks over deliveries, computed from the raw counts rather than averaging the per-campaign CTR column — a small campaign and a large one must not weigh the same.' },
+
+      { n:4, label:'WhatsApp Engagement Rate', value:rate(waClicked, waDelivered), kind:'pct',
+        den: waMissing ? 'awaiting 02_WhatsApp_Campaign_KPI' : `${fmtInt(waClicked)} clicked ÷ ${fmtInt(waDelivered)} delivered`,
+        state: waMissing ? BLOCKED : OK,
+        note:'Blocked until the WhatsApp export is dropped in. Nothing else needs to change — the tile fills itself.' },
+
+      { n:5, label:'Overall Digital Engagement', value:rate(emailClicked + waClicked, emailDelivered + waDelivered), kind:'pct',
+        den:`${fmtInt(emailClicked + waClicked)} clicks ÷ ${fmtInt(emailDelivered + waDelivered)} delivered`,
+        state: waMissing ? PARTIAL : OK,
+        note:`Clicks only, across email and WhatsApp — one rate, one unit. Counting Viva's ${fmtInt(vivaEngagements)} likes, comments and shares in the numerator would read ${fmtPct(mixed)}, but it would divide community activity by email deliveries. Viva keeps its own tile instead.` },
+
+      { n:6, label:'Webinar Registration Rate', value:rate(registered.length, pop), kind:'pct',
+        den:`${fmtInt(registered.length)} registered ÷ ${fmtInt(pop)} employees`,
+        state: has('webinar') ? OK : BLOCKED,
+        note:'The denominator is the employees present in the exports, which is the invited population — not necessarily the whole target audience.' },
+
+      { n:7, label:'Webinar Attendance Rate', value:attendRate, kind:'pct',
+        den:`${fmtInt(attended.length)} attended ÷ ${fmtInt(registered.length)} registered`,
+        state: has('webinar') ? OK : BLOCKED,
+        note:'Show-up rate among those who registered. Registration against the whole population is KPI 6.' },
+
+      { n:8, label:'Learning Completion Rate', value:lmsRate, kind:'pct',
+        den:`${fmtInt(completed)} ÷ ${fmtInt(assigned)} modules`,
+        state: has('lms') ? OK : BLOCKED,
+        note:'Modules, not people: an employee who finished four of eight counts as half. The share of employees who finished everything is lower, and is shown below.' },
+
+      { n:9, label:'Viva Engagement Rate', value:rate(active, members), kind:'pct',
+        den:`${fmtInt(active)} active ÷ ${fmtInt(members)} members`,
+        state: has('viva') ? OK : BLOCKED,
+        note:'Community_Members swings by thousands between consecutive days, so it behaves like members targeted that day rather than community size. Read this as daily activation of the targeted set.' },
+
+      { n:10, label:'Learning Engagement Index', value:index, kind:'index',
+        den: live.length === parts.length ? 'all four components' : `${live.length} of 4 components`,
+        state: live.length === parts.length ? OK : PARTIAL,
+        note:`Weighted composite: ${parts.map(p => `${p.label} ${Math.round(p.weight * 100)}%`).join(', ')}. Weights are a management choice — these are the defaults proposed in the plan.` },
+    ].map(k => segNote && (k.n <= 5 || k.n === 9) ? { ...k, seg:segNote } : k),
+  };
+}
+
+/* ================================================================= charts ==
+ * Hand-rolled SVG. Marks are thin, data-ends are rounded and anchored to the
+ * baseline, fills are separated by a 2px surface gap, grid is recessive, and
+ * every mark carries a hover tooltip. Series colours come from the tokens, in
+ * fixed slot order — never cycled, never reassigned when a filter changes the
+ * series count.
+ */
+const SERIES = ['var(--s1)','var(--s2)','var(--s3)','var(--s4)','var(--s5)','var(--s6)'];
+const ORDINAL = ['var(--o1)','var(--o2)','var(--o3)','var(--o4)','var(--o5)'];
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+const tip = () => $('#tip');
+function showTip(evt, html) {
+  const t = tip();
+  t.innerHTML = html;
+  t.style.opacity = '1';
+  const pad = 14, w = t.offsetWidth, h = t.offsetHeight;
+  let x = evt.clientX + pad, y = evt.clientY - h - 8;
+  if (x + w > innerWidth - 8) x = evt.clientX - w - pad;
+  if (y < 8) y = evt.clientY + pad;
+  t.style.left = x + 'px'; t.style.top = y + 'px';
+}
+const hideTip = () => { tip().style.opacity = '0'; };
+
+function svg(w, h) {
+  const s = document.createElementNS(SVGNS, 'svg');
+  s.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  s.setAttribute('role', 'img');
+  return s;
+}
+function node(parent, name, attrs, text) {
+  const n = document.createElementNS(SVGNS, name);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (text != null) n.textContent = text;
+  parent.appendChild(n);
+  return n;
+}
+/** Relative luminance of a resolved CSS colour, for picking readable label ink. */
+function luminance(colour) {
+  const m = /rgba?\(([^)]+)\)/.exec(colour);
+  if (!m) return 1;
+  const [r, g, b] = m[1].split(',').map(v => parseFloat(v) / 255);
+  const lin = c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+const ratio = (a, b) => {
+  const [hi, lo] = a > b ? [a, b] : [b, a];
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+/** Put a label on a mark in whichever ink actually survives against it.
+ *
+ *  Measured, not guessed: a luminance threshold picked dark ink for a mid-tone
+ *  blue in one theme and light ink for the same hex in the other. Comparing the
+ *  real contrast ratio against both candidates gets it right for any step of
+ *  any ramp, in any theme. Must run after both nodes are in the document — the
+ *  fill is a var() that only resolves once the element inherits the theme.
+ */
+function contrastLabel(text, mark) {
+  const probe = getComputedStyle(document.body);
+  const markL = luminance(getComputedStyle(mark).fill);
+  const inkL = luminance(probe.getPropertyValue('color'));
+  const surfaceL = luminance(probe.getPropertyValue('background-color'));
+  text.style.fill = ratio(markL, inkL) >= ratio(markL, surfaceL)
+    ? 'var(--ink)' : 'var(--surface)';
+}
+
+function hover(mark, html) {
+  mark.style.cursor = 'default';
+  mark.addEventListener('mousemove', e => showTip(e, html));
+  mark.addEventListener('mouseleave', hideTip);
+}
+
+/** Horizontal bars — one series, category labels at left, value at the end.
+ *  The form for magnitude across named categories: length is the easiest
+ *  channel to compare, and long names stay readable. */
+function hBars(items, { fmt = fmtInt, colour = 'var(--s1)', labelW = 152, note } = {}) {
+  const rowH = 26, gap = 7, w = 640;
+  const h = items.length * (rowH + gap) + 8;
+  const max = Math.max(...items.map(i => i.value), 1);
+  const barW = w - labelW - 66;
+  const s = svg(w, h);
+  items.forEach((it, i) => {
+    const y = i * (rowH + gap);
+    node(s, 'text', { x:labelW - 10, y:y + rowH / 2 + 4, 'text-anchor':'end', class:'cat' },
+      it.label.length > 30 ? it.label.slice(0, 29) + '…' : it.label);
+    node(s, 'rect', { x:labelW, y:y + 5, width:barW, height:rowH - 10,
+      rx:3, fill:'var(--grid)' });
+    const len = Math.max(2, (it.value / max) * barW);
+    const bar = node(s, 'rect', { x:labelW, y:y + 5, width:len, height:rowH - 10,
+      rx:3, fill:it.colour || colour });
+    hover(bar, `${it.label}<br><b>${fmt(it.value)}</b>${note ? '<br>' + note(it) : ''}`);
+    node(s, 'text', { x:labelW + len + 8, y:y + rowH / 2 + 4, class:'lbl' }, fmt(it.value));
+  });
+  return s;
+}
+
+/** Grouped bars — two or three series across a shared category axis. Used
+ *  where the comparison *between* series inside each category is the point. */
+function groupedBars(cats, series, { fmt = fmtInt, axisFmt } = {}) {
+  const w = 640, h = 235, padL = 46, padB = 40, padT = 10;
+  const plotW = w - padL - 12, plotH = h - padB - padT;
+  const max = Math.max(1, ...series.flatMap(s => s.values));
+  const s = svg(w, h);
+  for (let t = 0; t <= 4; t++) {
+    const y = padT + plotH - (t / 4) * plotH;
+    node(s, 'line', { x1:padL, y1:y, x2:padL + plotW, y2:y, class:'gridline' });
+    node(s, 'text', { x:padL - 8, y:y + 3.5, 'text-anchor':'end', class:'ax' },
+      (axisFmt || fmtInt)(max * t / 4));
+  }
+  const slot = plotW / cats.length;
+  const barW = Math.min(30, (slot - 12) / series.length - 2);
+  cats.forEach((cat, i) => {
+    const x0 = padL + i * slot + (slot - (barW + 2) * series.length) / 2;
+    series.forEach((ser, j) => {
+      const v = ser.values[i] || 0;
+      const bh = Math.max(1.5, (v / max) * plotH);
+      // 2px gap between adjacent fills so the pair never reads as one mark.
+      const bar = node(s, 'rect', { x:x0 + j * (barW + 2), y:padT + plotH - bh,
+        width:barW, height:bh, rx:3, fill:SERIES[j] });
+      hover(bar, `${cat}<br>${ser.name} <b>${fmt(v)}</b>`);
+    });
+    const text = node(s, 'text', { x:padL + i * slot + slot / 2, y:h - padB + 15,
+      'text-anchor':'middle', class:'ax' });
+    const words = String(cat).split(' ');
+    let line = '', lines = [];
+    for (const word of words) {
+      if ((line + ' ' + word).trim().length > 14) { lines.push(line.trim()); line = word; }
+      else line += ' ' + word;
+    }
+    lines.push(line.trim());
+    lines.slice(0, 2).forEach((l, k) => node(text, 'tspan',
+      { x:padL + i * slot + slot / 2, dy:k ? 11 : 0 }, l));
+  });
+  return s;
+}
+
+/** One 100% stacked bar — the shape of a split, where the parts sum to a
+ *  meaningful whole and the reader wants proportion, not magnitude. */
+function stackedBar(parts, { palette = ORDINAL, fmt = fmtInt } = {}) {
+  const w = 640, h = 46, total = parts.reduce((a, p) => a + p.value, 0) || 1;
+  const s = svg(w, h);
+  const pending = [];
+  let x = 0;
+  parts.forEach((p, i) => {
+    const seg = (p.value / total) * w;
+    const bar = node(s, 'rect', { x, y:6, width:Math.max(0, seg - 2), height:26,
+      rx:3, fill:p.colour || palette[i % palette.length] });
+    hover(bar, `${p.label}<br><b>${fmt(p.value)}</b> · ${fmtPct(p.value / total)}`);
+    if (seg > 54) {
+      const label = node(s, 'text', { x:x + seg / 2 - 1, y:23,
+        'text-anchor':'middle', class:'lbl' }, fmtPct(p.value / total, 0));
+      pending.push([label, bar]);
+    }
+    x += seg;
+  });
+  // The ordinal ramp reverses between themes, so which segment needs light ink
+  // is not fixed — measure the resolved fill once the SVG is in the document.
+  requestAnimationFrame(() => pending.forEach(([t, r]) => contrastLabel(t, r)));
+  return s;
+}
+
+/** Multi-series line over time, with a shared crosshair and end labels so
+ *  identity never rests on colour alone. */
+function lines(xs, series, { fmt = fmtPct } = {}) {
+  const w = 640, h = 250, padL = 46, padB = 34, padT = 10;
+  const padR = series.length <= 4 ? 96 : 14;
+  const plotW = w - padL - padR, plotH = h - padB - padT;
+  const max = Math.max(0.0001, ...series.flatMap(s => s.values.filter(v => v != null)));
+  const s = svg(w, h);
+  for (let t = 0; t <= 4; t++) {
+    const y = padT + plotH - (t / 4) * plotH;
+    node(s, 'line', { x1:padL, y1:y, x2:padL + plotW, y2:y, class:'gridline' });
+    node(s, 'text', { x:padL - 8, y:y + 3.5, 'text-anchor':'end', class:'ax' },
+      fmt(max * t / 4, 0));
+  }
+  const X = i => padL + (xs.length === 1 ? plotW / 2 : (i / (xs.length - 1)) * plotW);
+  const Y = v => padT + plotH - (v / max) * plotH;
+
+  xs.forEach((x, i) => {
+    if (i % Math.ceil(xs.length / 6) && i !== xs.length - 1) return;
+    node(s, 'text', { x:X(i), y:h - padB + 15, 'text-anchor':'middle', class:'ax' }, x.label);
+  });
+
+  series.forEach((ser, j) => {
+    const pts = ser.values.map((v, i) => v == null ? null : [X(i), Y(v)]).filter(Boolean);
+    if (!pts.length) return;
+    node(s, 'path', { d:'M' + pts.map(p => p.join(' ')).join(' L '),
+      fill:'none', stroke:SERIES[j], 'stroke-width':2,
+      'stroke-linejoin':'round', 'stroke-linecap':'round' });
+    const last = pts[pts.length - 1];
+    // 2px surface ring so crossing endpoints stay separable.
+    node(s, 'circle', { cx:last[0], cy:last[1], r:3.5, fill:SERIES[j],
+      stroke:'var(--surface)', 'stroke-width':2 });
+    // Direct-label only up to four series; beyond that the end labels stack on
+    // top of each other and the legend carries identity instead.
+    if (series.length <= 4) {
+      const endLabel = node(s, 'text', { x:last[0] + 8, y:last[1] + 3.5, class:'cat' },
+        ser.name.length > 15 ? ser.name.slice(0, 14) + '…' : ser.name);
+      endLabel.style.fill = SERIES[j];
+    }
+  });
+
+  // One crosshair band per x, rather than a hit target per point.
+  const band = plotW / Math.max(1, xs.length - 1);
+  xs.forEach((x, i) => {
+    const r = node(s, 'rect', { x:X(i) - band / 2, y:padT, width:band, height:plotH,
+      fill:'transparent' });
+    const line = node(s, 'line', { x1:X(i), y1:padT, x2:X(i), y2:padT + plotH,
+      stroke:'var(--rule-2)', 'stroke-width':1, opacity:0 });
+    r.addEventListener('mousemove', e => {
+      line.setAttribute('opacity', 1);
+      showTip(e, `<b>${x.label}</b><br>` + series.map((ser, j) =>
+        `<span style="color:${SERIES[j]}">■</span> ${ser.name} <b>${fmt(ser.values[i])}</b>`)
+        .join('<br>'));
+    });
+    r.addEventListener('mouseleave', () => { line.setAttribute('opacity', 0); hideTip(); });
+  });
+  return s;
+}
+
+/** Funnel — an ordinal ramp, because the stages are ordered and each is a
+ *  subset of the one before. */
+function funnel(stages) {
+  const w = 640, rowH = 38, s = svg(w, stages.length * rowH + 4);
+  const top = stages[0].value || 1;
+  stages.forEach((st, i) => {
+    const y = i * rowH;
+    const len = Math.max(3, (st.value / top) * (w - 190));
+    const bar = node(s, 'rect', { x:150, y:y + 6, width:len, height:rowH - 14,
+      rx:3, fill:ORDINAL[Math.min(i, ORDINAL.length - 1)] });
+    hover(bar, `${st.label}<br><b>${fmtInt(st.value)}</b>` +
+      (i ? `<br>${fmtPct(st.value / stages[i - 1].value)} of ${stages[i - 1].label.toLowerCase()}` : ''));
+    node(s, 'text', { x:140, y:y + rowH / 2 + 3, 'text-anchor':'end', class:'cat' }, st.label);
+    node(s, 'text', { x:150 + len + 8, y:y + rowH / 2 + 3, class:'lbl' },
+      fmtInt(st.value) + (i ? `  ${fmtPct(st.value / stages[i - 1].value, 0)}` : ''));
+  });
+  return s;
+}
+
+function legend(names, palette = SERIES) {
+  const box = el('div', 'legend');
+  names.forEach((n, i) => {
+    const item = el('span');
+    const swatch = el('i');
+    swatch.style.background = palette[i % palette.length];
+    item.append(swatch, document.createTextNode(n));
+    box.appendChild(item);
+  });
+  return box;
+}
+
+function table(headers, rowsIn) {
+  const wrap = el('div', 'scroll');
+  const t = el('table', 'tbl');
+  const thead = el('thead'), tr = el('tr');
+  headers.forEach(h => tr.appendChild(el('th', null, h)));
+  thead.appendChild(tr); t.appendChild(thead);
+  const tb = el('tbody');
+  rowsIn.forEach(r => {
+    const row = el('tr');
+    r.forEach((c, i) => row.appendChild(el('td', i ? 'n' : null, c)));
+    tb.appendChild(row);
+  });
+  t.appendChild(tb); wrap.appendChild(t);
+  return wrap;
+}
+
+/** Vertical bars over an ordered band axis — a distribution, where the order
+ *  of the categories is itself information and reversing it would be wrong. */
+function bandBars(items, { colour = 'var(--s1)', fmt = fmtInt, note } = {}) {
+  const w = 640, h = 200, padL = 34, padB = 34, padT = 12;
+  const plotW = w - padL - 10, plotH = h - padB - padT;
+  const max = Math.max(1, ...items.map(i => i.value));
+  const s = svg(w, h);
+  for (let t = 0; t <= 4; t++) {
+    const y = padT + plotH - (t / 4) * plotH;
+    node(s, 'line', { x1:padL, y1:y, x2:padL + plotW, y2:y, class:'gridline' });
+    node(s, 'text', { x:padL - 8, y:y + 3.5, 'text-anchor':'end', class:'ax' }, fmtInt(max * t / 4));
+  }
+  const slot = plotW / items.length, barW = Math.min(56, slot - 8);
+  items.forEach((it, i) => {
+    const x = padL + i * slot + (slot - barW) / 2;
+    const bh = Math.max(1.5, (it.value / max) * plotH);
+    const bar = node(s, 'rect', { x, y:padT + plotH - bh, width:barW, height:bh,
+      rx:3, fill:it.colour || colour });
+    hover(bar, `${it.label}<br><b>${fmt(it.value)}</b>${note ? '<br>' + note(it) : ''}`);
+    node(s, 'text', { x:x + barW / 2, y:padT + plotH - bh - 6, 'text-anchor':'middle',
+      class:'lbl' }, fmt(it.value));
+    node(s, 'text', { x:x + barW / 2, y:h - padB + 15, 'text-anchor':'middle',
+      class:'ax' }, it.label);
+  });
+  return s;
+}
+
+/* ================================================================== view ==
+ * Every section renders from DATA + FILTER and nothing else, so a filter
+ * change is a full re-render rather than a set of patches that can drift out
+ * of step with each other. At this data size that costs a few milliseconds.
+ */
+
+function card(title, sub, extra) {
+  const box = el('section', 'card' + (extra ? ' ' + extra : ''));
+  const head = el('div', 'card-head');
+  head.appendChild(el('h3', null, title));
+  if (sub) head.appendChild(el('p', 'sub', sub));
+  box.appendChild(head);
+  const body = el('div', 'card-body');
+  box.appendChild(body);
+  return { box, body };
+}
+
+/** What a section shows when its source has not been dropped in yet. Not a
+ *  blank space and not an error — the columns it is waiting for. */
+function awaiting(src) {
+  const box = el('div', 'await');
+  const head = el('p', 'await-h');
+  head.append(dot('blocked'), document.createTextNode(`Awaiting ${src.file}`));
+  box.appendChild(head);
+  box.appendChild(el('p', 'await-c', src.cols));
+  return box;
+}
+
+function dot(state) {
+  const s = el('span', 'dot dot-' + state);
+  s.setAttribute('aria-hidden', 'true');
+  s.textContent = state === 'ok' ? '●' : state === 'partial' ? '▲' : '○';
+  return s;
+}
+
+const groupBy = (rows, key) => {
+  const m = new Map();
+  rows.forEach(r => {
+    const k = r[key] == null ? '—' : String(r[key]);
+    (m.get(k) || m.set(k, []).get(k)).push(r);
+  });
+  return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+};
+
+/* ------------------------------------------------------------- intake ---- */
+
+function renderSources() {
+  const list = $('#sources');
+  list.textContent = '';
+  SOURCES.forEach(src => {
+    const rows = (DATA[src.id] || []).length;
+    const li = el('li', rows ? 'src on' : 'src');
+    li.append(dot(rows ? 'ok' : 'blocked'));
+    const body = el('div');
+    body.appendChild(el('strong', null, src.label));
+    body.appendChild(el('span', 'src-file', rows
+      ? `${fmtInt(rows)} row${rows === 1 ? '' : 's'} loaded`
+      : `expects ${src.cols.split(' · ').slice(0, 4).join(', ')}…`));
+    li.appendChild(body);
+    list.appendChild(li);
+  });
+  const n = SOURCES.filter(s => (DATA[s.id] || []).length).length;
+  $('#intake').classList.toggle('loaded', n > 0);
+  $('#count').textContent = n ? `${n} of ${SOURCES.length} reports loaded` : '';
+}
+
+/* ------------------------------------------------------------ filters ---- */
+
+function options(sel, values, label) {
+  sel.textContent = '';
+  sel.appendChild(el('option', null, label));
+  sel.firstChild.value = '';
+  values.forEach(v => { const o = el('option', null, v); o.value = v; sel.appendChild(o); });
+}
+
+function renderFilters() {
+  const people = [...(DATA.webinar || []), ...(DATA.lms || [])];
+  const uniq = key => [...new Set(people.map(r => r[key]).filter(Boolean))].sort();
+  options($('#f-channel'), uniq('Channel'), 'All channels');
+  options($('#f-location'), uniq('Location'), 'All locations');
+  options($('#f-path'), [...new Set((DATA.lms || []).map(r => r.Learning_Path).filter(Boolean))].sort(),
+    'All learning paths');
+  $('#f-channel').value = FILTER.channel;
+  $('#f-location').value = FILTER.location;
+  $('#f-path').value = FILTER.path;
+  $('#filters').hidden = !people.length;
+  $('#seg-note').hidden = segmentable('campaign');
+}
+
+/* --------------------------------------------------------------- band 1 -- */
+
+function renderKpis(K) {
+  const grid = $('#kpi-grid');
+  grid.textContent = '';
+  let open = null;
+  K.list.forEach(k => {
+    const tile = el('button', 'tile');
+    tile.type = 'button';
+    tile.setAttribute('aria-expanded', 'false');
+    tile.appendChild(el('span', 'tile-n', String(k.n).padStart(2, '0')));
+    tile.appendChild(el('span', 'tile-label', k.label));
+    const v = k.value == null ? '—'
+      : k.kind === 'pct' ? fmtPct(k.value)
+      : k.kind === 'index' ? fmtNum(k.value, 0)
+      : fmtInt(k.value);
+    const value = el('span', 'tile-value', v);
+    if (k.kind === 'index' && k.value != null) value.appendChild(el('small', null, ' / 100'));
+    tile.appendChild(value);
+    tile.appendChild(el('span', 'tile-den', k.den));
+    if (k.state !== 'ok') {
+      const chip = el('span', 'chip chip-' + k.state);
+      chip.append(dot(k.state), document.createTextNode(
+        k.state === 'blocked' ? 'Awaiting file' : 'Partial'));
+      tile.appendChild(chip);
+    }
+    tile.addEventListener('click', () => {
+      const same = open === tile;
+      grid.querySelectorAll('.tile').forEach(t => {
+        t.classList.remove('open'); t.setAttribute('aria-expanded', 'false');
+      });
+      const panel = $('#kpi-working');
+      if (same) { open = null; panel.hidden = true; return; }
+      open = tile;
+      tile.classList.add('open');
+      tile.setAttribute('aria-expanded', 'true');
+      panel.textContent = '';
+      panel.appendChild(el('h4', null, `${String(k.n).padStart(2, '0')} · ${k.label}`));
+      panel.appendChild(el('p', 'working-den', k.den));
+      panel.appendChild(el('p', null, k.note));
+      if (k.seg) panel.appendChild(el('p', 'working-seg', k.seg));
+      panel.hidden = false;
+    });
+    grid.appendChild(tile);
+  });
+  $('#kpi-working').hidden = true;
+}
+
+/* --------------------------------------------------------------- band 2 -- */
+
+function renderComms(K) {
+  const wrap = $('#band-comms');
+  wrap.textContent = '';
+  const email = campaignRows('email');
+  const viva = campaignRows('viva');
+
+  const c1 = card('Email funnel',
+    'Sent to clicked, summed across every campaign in range.');
+  if (email.length) {
+    c1.body.appendChild(funnel([
+      { label:'Sent', value:sum(email, 'Sent') },
+      { label:'Delivered', value:sum(email, 'Delivered') },
+      { label:'Opened', value:sum(email, 'Opened') },
+      { label:'Clicked', value:sum(email, 'Clicked') },
+    ]));
+    c1.body.appendChild(el('p', 'foot',
+      `Each percentage is of the stage above it. ${fmtPct(rate(sum(email, 'Clicked'), sum(email, 'Opened')))} of the people who opened went on to click.`));
+  } else c1.body.appendChild(awaiting(SOURCES[0]));
+  wrap.appendChild(c1.box);
+
+  const c2 = card('Email response by campaign',
+    'Open and click rates computed per campaign from raw counts.');
+  if (email.length) {
+    const xs = email.map(r => ({ label:fmtDay(asDate(r.Campaign_Date)) }));
+    c2.body.appendChild(lines(xs, [
+      { name:'Open rate', values:email.map(r => rate(N(r.Opened), N(r.Delivered))) },
+      { name:'Click rate', values:email.map(r => rate(N(r.Clicked), N(r.Delivered))) },
+    ]));
+    c2.body.appendChild(legend(['Open rate', 'Click rate']));
+  } else c2.body.appendChild(awaiting(SOURCES[0]));
+  wrap.appendChild(c2.box);
+
+  const c3 = card('WhatsApp', 'The second communication channel.');
+  if (has('whatsapp')) {
+    const wa = campaignRows('whatsapp');
+    c3.body.appendChild(funnel([
+      { label:'Sent', value:sum(wa, 'Sent') },
+      { label:'Delivered', value:sum(wa, 'Delivered') },
+      { label:'Read', value:sum(wa, 'Read') },
+      { label:'Clicked', value:sum(wa, 'Clicked') },
+    ]));
+  } else {
+    c3.body.appendChild(awaiting(SOURCES[1]));
+    c3.body.appendChild(el('p', 'foot',
+      'Two KPIs are held open for it. Drop the file in and they fill — the column names above are what the page looks for, and it will accept the file under any name.'));
+  }
+  wrap.appendChild(c3.box);
+
+  const c4 = card('Viva Engage activation',
+    'Active users as a share of the members targeted that day.');
+  if (viva.length) {
+    const xs = viva.map(r => ({ label:fmtDay(asDate(r.Campaign_Date)) }));
+    c4.body.appendChild(lines(xs, [
+      { name:'Active', values:viva.map(r => rate(N(r.Active_Users), N(r.Community_Members))) },
+    ]));
+    c4.body.appendChild(el('p', 'foot',
+      `Community_Members moves between ${fmtInt(Math.min(...viva.map(r => N(r.Community_Members))))} and ${fmtInt(Math.max(...viva.map(r => N(r.Community_Members))))} across consecutive days, which a community size does not do. Read the rate as daily activation of the set targeted that day.`));
+  } else c4.body.appendChild(awaiting(SOURCES[4]));
+  wrap.appendChild(c4.box);
+
+  const c5 = card('What Viva engagement is made of',
+    'Every interaction recorded across the campaigns in range.', 'wide');
+  if (viva.length) {
+    const kinds = ['Likes', 'Comments', 'Shares', 'Posts', 'Polls'];
+    const parts = kinds.map(k => ({ label:k, value:sum(viva, k) }));
+    c5.body.appendChild(stackedBar(parts));
+    c5.body.appendChild(legend(kinds, ORDINAL));
+    const total = parts.reduce((a, p) => a + p.value, 0);
+    c5.body.appendChild(el('p', 'foot',
+      `${fmtInt(total)} interactions in total. ${fmtPct(rate(parts[0].value, total), 0)} are likes — the lowest-effort act available, which is why KPI 5 counts clicks rather than mixing these in.`));
+  } else c5.body.appendChild(awaiting(SOURCES[4]));
+  wrap.appendChild(c5.box);
+}
+
+/* --------------------------------------------------------------- band 3 -- */
+
+const BANDS = [
+  { label:'<50', lo:-Infinity, hi:50 }, { label:'50–59', lo:50, hi:60 },
+  { label:'60–69', lo:60, hi:70 }, { label:'70–79', lo:70, hi:80 },
+  { label:'80–89', lo:80, hi:90 }, { label:'90+', lo:90, hi:Infinity },
+];
+
+function renderLearning(K) {
+  const wrap = $('#band-learn');
+  wrap.textContent = '';
+  const web = employeeRows('webinar');
+  const lms = employeeRows('lms');
+
+  const c1 = card('Webinar funnel',
+    'Employees in the export, through to a certificate issued.');
+  if (web.length) {
+    const reg = web.filter(r => yes(r.Registered)).length;
+    const att = web.filter(r => yes(r.Attended)).length;
+    const cert = web.filter(r => yes(r.Certificate)).length;
+    c1.body.appendChild(funnel([
+      { label:'Employees', value:population() },
+      { label:'Registered', value:reg },
+      { label:'Attended', value:att },
+      { label:'Certified', value:cert },
+    ]));
+    const mins = web.filter(r => yes(r.Attended)).map(r => N(r.Duration_Min));
+    c1.body.appendChild(el('p', 'foot',
+      `Attendees stayed ${fmtNum(mins.reduce((a, b) => a + b, 0) / (mins.length || 1), 0)} minutes on average.`));
+  } else c1.body.appendChild(awaiting(SOURCES[2]));
+  wrap.appendChild(c1.box);
+
+  const c2 = card('Registered and attended, by channel',
+    'Where the drop-off between signing up and showing up actually happens.');
+  if (web.length) {
+    const groups = groupBy(web, 'Channel');
+    c2.body.appendChild(groupedBars(groups.map(g => g[0]), [
+      { name:'Registered', values:groups.map(g => g[1].filter(r => yes(r.Registered)).length) },
+      { name:'Attended', values:groups.map(g => g[1].filter(r => yes(r.Attended)).length) },
+    ]));
+    c2.body.appendChild(legend(['Registered', 'Attended']));
+  } else c2.body.appendChild(awaiting(SOURCES[2]));
+  wrap.appendChild(c2.box);
+
+  const c3 = card('Learning completion by path',
+    'Modules completed as a share of modules assigned.');
+  if (lms.length) {
+    const groups = groupBy(lms, 'Learning_Path');
+    c3.body.appendChild(hBars(groups.map(([name, rows]) => ({
+      label:name,
+      value:rate(sum(rows, 'Modules_Completed'), sum(rows, 'Modules_Assigned')) || 0,
+      rows,
+    })).sort((a, b) => b.value - a.value), {
+      fmt:v => fmtPct(v, 0),
+      note:it => `${fmtInt(sum(it.rows, 'Modules_Completed'))} of ${fmtInt(sum(it.rows, 'Modules_Assigned'))} modules · ${it.rows.length} employees`,
+    }));
+    const done = lms.filter(r => N(r.Modules_Completed) >= N(r.Modules_Assigned) && N(r.Modules_Assigned) > 0).length;
+    const none = lms.filter(r => N(r.Modules_Completed) === 0).length;
+    c3.body.appendChild(el('p', 'foot',
+      `Measured in modules, not people: ${fmtInt(done)} of ${fmtInt(lms.length)} employees have finished everything assigned to them, and ${fmtInt(none)} have started nothing.`));
+  } else c3.body.appendChild(awaiting(SOURCES[3]));
+  wrap.appendChild(c3.box);
+
+  const c4 = card('Assessment scores',
+    'Employees by score band — the shape behind the average.');
+  if (lms.length) {
+    const scores = lms.map(r => N(r['Assessment_Score_%'])).filter(v => v > 0);
+    c4.body.appendChild(bandBars(BANDS.map(b => ({
+      label:b.label, value:scores.filter(s => s >= b.lo && s < b.hi).length,
+    })), { note:it => 'employees' }));
+    c4.body.appendChild(el('p', 'foot',
+      `${fmtInt(scores.length)} employees have a recorded score, averaging ${fmtNum(scores.reduce((a, b) => a + b, 0) / (scores.length || 1))}%.`));
+  } else c4.body.appendChild(awaiting(SOURCES[3]));
+  wrap.appendChild(c4.box);
+}
+
+/* --------------------------------------------------------------- band 4 -- */
+
+function renderCross(K) {
+  const wrap = $('#band-cross');
+  wrap.textContent = '';
+  const web = employeeRows('webinar');
+  const lms = employeeRows('lms');
+
+  const c1 = card('Every channel, side by side',
+    'The two employee reports joined on Employee_ID — the reason to consolidate at all.');
+  if (web.length || lms.length) {
+    const channels = [...new Set([...web, ...lms].map(r => r.Channel).filter(Boolean))].sort();
+    const rows = channels.map(ch => {
+      const w = web.filter(r => r.Channel === ch);
+      const l = lms.filter(r => r.Channel === ch);
+      const reg = w.filter(r => yes(r.Registered)).length;
+      const att = w.filter(r => yes(r.Attended)).length;
+      const scores = l.map(r => N(r['Assessment_Score_%'])).filter(v => v > 0);
+      return [ch,
+        fmtInt(new Set([...w, ...l].map(r => r.Employee_ID)).size),
+        fmtPct(rate(reg, w.length), 0),
+        fmtPct(rate(att, reg), 0),
+        fmtPct(rate(sum(l, 'Modules_Completed'), sum(l, 'Modules_Assigned')), 0),
+        fmtNum(scores.reduce((a, b) => a + b, 0) / (scores.length || 1), 0) + '%',
+        fmtInt(w.filter(r => yes(r.Certificate)).length),
+      ];
+    });
+    c1.body.appendChild(table(
+      ['Channel', 'People', 'Reg %', 'Att %', 'Modules %', 'Score', 'Certs'],
+      rows));
+    c1.body.appendChild(el('p', 'foot',
+      'Registered is of that channel’s employees; attended is of those who registered. This table is also the accessible reading of every chart above it.'));
+  } else c1.body.appendChild(awaiting(SOURCES[2]));
+  wrap.appendChild(c1.box);
+
+  const c2 = card('How the index is built',
+    'Four components, weighted. Change your mind about the weights and the number moves — which is the point of showing them.');
+  const idx = K.list.find(k => k.n === 10);
+  const hero = el('div', 'hero');
+  hero.appendChild(el('span', 'hero-v', idx.value == null ? '—' : fmtNum(idx.value, 0)));
+  hero.appendChild(el('span', 'hero-u', '/ 100'));
+  c2.body.appendChild(hero);
+  c2.body.appendChild(hBars(K.parts.map(p => ({
+    label:`${p.label} · ${Math.round(p.weight * 100)}%`,
+    value:p.value == null ? 0 : p.value,
+    p,
+  })), { fmt:v => fmtPct(v, 0),
+    note:it => it.p.value == null ? 'no data — weight redistributed'
+      : `contributes ${fmtNum(it.p.weight * it.p.value * 100 / (K.weightSum || 1), 1)} points` }));
+  c2.body.appendChild(el('p', 'foot',
+    K.live.length === K.parts.length
+      ? 'Certification is measured against attendees, not the whole population — a certificate cannot be earned by someone who never attended.'
+      : `${K.parts.length - K.live.length} component(s) have no data; the remaining weights were renormalised rather than counting the gap as zero.`));
+  wrap.appendChild(c2.box);
+}
+
+/* ------------------------------------------------------------ assembly --- */
+
+function period() {
+  const dates = [...campaignRows('email'), ...campaignRows('viva'), ...campaignRows('whatsapp')]
+    .map(r => asDate(r.Campaign_Date)).filter(d => d && !isNaN(d)).sort((a, b) => a - b);
+  if (!dates.length) return '';
+  const one = dates[0].getTime() === dates[dates.length - 1].getTime();
+  return one ? fmtDay(dates[0]) + ' ' + dates[0].getFullYear()
+    : `${fmtDay(dates[0])} – ${fmtDay(dates[dates.length - 1])} ${dates[dates.length - 1].getFullYear()}`;
+}
+
+function render() {
+  renderSources();
+  const any = SOURCES.some(s => (DATA[s.id] || []).length);
+  $('#dash').hidden = !any;
+  if (!any) return;
+  renderFilters();
+  const K = kpis();
+  renderKpis(K);
+  renderComms(K);
+  renderLearning(K);
+  renderCross(K);
+  const p = period();
+  $('#period').textContent = p ? `Campaign period ${p}` : 'Employee reports only — no campaign dates in range';
+}
+
+/* ================================================================= wiring ==
+ * Nothing here touches the network or storage. The parsed rows live in the
+ * DATA object for as long as the tab is open and go no further — no fetch, no
+ * localStorage, no cookie. That claim is on the page because anyone handling
+ * employee records will ask about it before anything else.
+ */
+
+function note(results) {
+  const log = $('#log');
+  log.textContent = '';
+  results.forEach(r => {
+    const line = el('p', r.error ? 'log-err' : 'log-ok');
+    line.append(dot(r.error ? 'partial' : 'ok'), document.createTextNode(
+      r.error ? `${r.file} — ${r.error}` : `${r.file} → ${r.src.label}, ${fmtInt(r.n)} rows`));
+    log.appendChild(line);
+  });
+  log.hidden = !results.length;
+}
+
+async function load(files) {
+  const list = [...files].filter(f => /\.xlsx$/i.test(f.name));
+  if (!list.length) {
+    note([{ file:'No .xlsx among the files chosen', error:'expects Excel exports' }]);
+    return;
+  }
+  $('#drop').classList.add('busy');
+  const results = await ingest(list);
+  $('#drop').classList.remove('busy');
+  note(results);
+  FILTER = { channel:'', location:'', path:'', from:null, to:null };
+  render();
+}
+
+function wire() {
+  const input = $('#file');
+  $('#pick').addEventListener('click', () => input.click());
+  input.addEventListener('change', () => { load(input.files); input.value = ''; });
+
+  const drop = $('#drop');
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => {
+    e.preventDefault(); drop.classList.add('over');
+  }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => {
+    e.preventDefault(); drop.classList.remove('over');
+  }));
+  drop.addEventListener('drop', e => load(e.dataTransfer.files));
+
+  const set = (key, value) => { FILTER[key] = value; render(); };
+  $('#f-channel').addEventListener('change', e => set('channel', e.target.value));
+  $('#f-location').addEventListener('change', e => set('location', e.target.value));
+  $('#f-path').addEventListener('change', e => set('path', e.target.value));
+  $('#f-reset').addEventListener('click', () => {
+    FILTER = { channel:'', location:'', path:'', from:null, to:null };
+    render();
+  });
+}
+
+wire();
+render();
+
+</script>
