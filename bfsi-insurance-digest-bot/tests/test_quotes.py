@@ -17,15 +17,18 @@ ENTRY = WatchlistEntry(symbol="MFSL.NS", name="Max Financial Services",
                        match=("Max Financial", "Max Life"))
 
 
-def envelope(price=1200.0, previous=1150.0, closes=(1000.0, 1100.0, 1200.0)):
+def envelope(price=1200.0, previous=1150.0, closes=(1000.0, 1100.0, 1200.0),
+             chart_previous=None):
+    meta = {"symbol": "MFSL.NS", "currency": "INR", "regularMarketPrice": price}
+    if previous is not None:
+        meta["previousClose"] = previous
+    if chart_previous is not None:
+        meta["chartPreviousClose"] = chart_previous
     return {
         "chart": {
             "error": None,
             "result": [{
-                "meta": {
-                    "symbol": "MFSL.NS", "currency": "INR",
-                    "regularMarketPrice": price, "chartPreviousClose": previous,
-                },
+                "meta": meta,
                 "indicators": {"quote": [{"close": list(closes)}]},
             }],
         }
@@ -48,7 +51,33 @@ def test_a_quote_carries_the_day_move_and_the_month_trend():
     assert quote.direction == "up"
 
 
-def test_the_oldest_real_close_is_used_for_the_month(   ):
+def test_the_day_move_is_not_the_month_move():
+    """The bug this test exists for: `chartPreviousClose` is the close before
+    the *range* starts — a month back at this range, not yesterday. Reading it
+    as yesterday made every symbol report an identical day and month change,
+    which is how it was caught against live data.
+    """
+    # A month of drift from 1000 to 1200, but yesterday closed at 1190.
+    quote = _parse(
+        envelope(price=1200.0, previous=1190.0, closes=(1000.0, 1150.0, 1190.0, 1200.0),
+                 chart_previous=990.0),
+        ENTRY,
+    )
+    assert quote.day_change_pct == pytest.approx(10 / 1190 * 100)
+    assert quote.month_change_pct == pytest.approx(20.0)
+    assert quote.day_change_pct != pytest.approx(quote.month_change_pct)
+
+
+def test_yesterday_falls_back_to_the_series_when_the_field_is_absent():
+    """Not every response carries `previousClose`; the second-to-last daily
+    close is the same fact by another route."""
+    quote = _parse(envelope(price=1200.0, previous=None,
+                            closes=(1000.0, 1150.0, 1190.0, 1200.0)), ENTRY)
+    assert quote.previous_close == 1190.0
+    assert quote.day_change_pct == pytest.approx(10 / 1190 * 100)
+
+
+def test_the_oldest_real_close_is_used_for_the_month():
     """Yahoo leaves nulls on non-trading days; the first one is often None."""
     quote = _parse(envelope(closes=(None, None, 1000.0, 1200.0)), ENTRY)
     assert quote.month_change_pct == pytest.approx(20.0)
@@ -76,9 +105,11 @@ def test_a_broken_response_becomes_a_value_not_an_exception(payload, reason):
     assert reason in quote.error
 
 
-def test_a_missing_previous_close_still_yields_a_price():
-    """Partial data is worth printing; the change is simply omitted."""
-    quote = _parse(envelope(previous=None), ENTRY)
+def test_a_price_with_nothing_to_compare_it_to_is_still_printed():
+    """Partial data is worth showing. With no previousClose field and too short
+    a series to derive one, the price stands alone and the change is omitted
+    rather than guessed at."""
+    quote = _parse(envelope(previous=None, closes=(1200.0,)), ENTRY)
     assert quote.ok and quote.price == 1200.0
     assert quote.day_change_pct is None
     assert quote.direction == "flat"

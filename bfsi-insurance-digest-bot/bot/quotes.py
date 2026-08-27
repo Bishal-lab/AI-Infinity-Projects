@@ -99,18 +99,30 @@ def _parse(payload: dict, entry: WatchlistEntry) -> Quote:
 
     meta = results[0].get("meta") or {}
     price = meta.get("regularMarketPrice")
-    previous = meta.get("chartPreviousClose") or meta.get("previousClose")
     if price is None:
         return Quote(entry=entry, error="the response carried no price")
 
-    # The oldest close in the series, skipping the nulls Yahoo leaves on
-    # non-trading days.
-    month_ago = None
+    # The daily closes inside the requested range, with the nulls Yahoo leaves
+    # on non-trading days removed.
+    closes: list[float] = []
     try:
-        closes = results[0]["indicators"]["quote"][0]["close"]
-        month_ago = next((c for c in closes if c is not None), None)
-    except (KeyError, IndexError, TypeError):
+        raw = results[0]["indicators"]["quote"][0]["close"]
+        closes = [float(c) for c in raw if c is not None]
+    except (KeyError, IndexError, TypeError, ValueError):
         pass
+
+    # `chartPreviousClose` is the close *before the range begins* — a month ago
+    # at this range, not yesterday. Using it as the day's reference made every
+    # symbol report the same number for its day move and its month move, which
+    # is what gave the bug away. Yesterday is `previousClose` when the endpoint
+    # sends it, and otherwise the last-but-one close in the series.
+    previous = meta.get("previousClose")
+    if previous is None and len(closes) >= 2:
+        previous = closes[-2]
+
+    # The oldest close in the range, falling back to the pre-range close, which
+    # is what that field is actually good for.
+    month_ago = closes[0] if closes else meta.get("chartPreviousClose")
 
     return Quote(
         entry=entry,
