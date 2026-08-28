@@ -106,3 +106,21 @@ def recent_fetch(fixture_fetch):
         return results
 
     return fetch
+
+
+@pytest.fixture(autouse=True)
+def no_real_quotes(monkeypatch):
+    """No test may reach the quote service.
+
+    Autouse rather than opt-in because the failure mode is silent and slow: the
+    shipped settings.yaml carries a watchlist, so any test that builds a digest
+    would otherwise make five real HTTP calls, each retried with a backoff. A
+    test that hangs for a minute reads as a hang, not as a network call.
+
+    Returning no quotes is not a fudge — it is exactly what an empty watchlist
+    does, which is a supported configuration and the one every test here
+    predates. Tests that want quotes supply them explicitly, via
+    build_digest(quote_fn=…) or by constructing Quote objects directly, and a
+    test that forgets still fails loudly on its own assertions.
+    """
+    monkeypatch.setattr("bot.quotes.fetch_all", lambda entries, settings: [])

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import smtplib
 import ssl
 from email.message import EmailMessage
@@ -35,9 +36,52 @@ def sender() -> str:
 
 
 def password() -> str:
+    """The App Password, with every space removed.
+
+    Google displays it as four groups of four — "abcd efgh ijkl mnop" — and
+    people copy it as shown. Gmail wants the sixteen characters with no spaces,
+    so strip them all rather than only the ends; the README has always said
+    spaces are ignored.
+    """
+    raw = os.environ.get("GMAIL_APP_PASSWORD") or os.environ.get("SMTP_PASSWORD") or ""
+    return "".join(raw.split())
+
+
+#: What Google issues: exactly sixteen lowercase letters. Not a length range and
+#: not "something strong" — a fixed shape, which is what makes it checkable.
+_APP_PASSWORD = re.compile(r"^[a-z]{16}$")
+
+#: Only Gmail is this strict. Another SMTP host takes whatever it takes, so the
+#: check below is scoped by hostname rather than applied to everyone.
+_GMAIL_HOSTS = ("smtp.gmail.com", "smtp.googlemail.com")
+
+
+def looks_like_an_app_password(value: str) -> bool:
+    return bool(_APP_PASSWORD.match(value))
+
+
+def credential_problem(config: Config) -> str | None:
+    """A wrong-shaped Gmail credential, described — or None if it looks right.
+
+    Gmail rejects account passwords over SMTP, always. Catching that here turns
+    a 08:00 failure with a bare "Username and Password not accepted" into an
+    error at setup time that says what to do about it.
+    """
+    if config.email.smtp_host.lower() not in _GMAIL_HOSTS:
+        return None
+    value = password()
+    if not value or looks_like_an_app_password(value):
+        return None
     return (
-        os.environ.get("GMAIL_APP_PASSWORD") or os.environ.get("SMTP_PASSWORD") or ""
-    ).strip()
+        f"GMAIL_APP_PASSWORD does not look like an App Password "
+        f"({len(value)} characters"
+        + (", with capitals or digits" if not value.islower() or not value.isalpha() else "")
+        + "). Google issues exactly 16 lowercase letters, shown as four groups "
+        "of four. An ordinary account password will always be rejected by "
+        "Gmail's SMTP, so this is being caught now rather than at 08:00. "
+        "Create one at myaccount.google.com → Security → 2-Step Verification "
+        "→ App passwords."
+    )
 
 
 def recipients() -> list[str]:
@@ -55,7 +99,11 @@ def missing_settings() -> list[str]:
         missing.append("GMAIL_ADDRESS")
     if not password():
         missing.append("GMAIL_APP_PASSWORD")
-    if not recipients():
+    if sender() and not recipients():
+        # Only reachable if EMAIL_TO is set to something that parses to nothing
+        # (a lone comma, say). With the sender unset it is the sender that is
+        # missing, not the recipient — EMAIL_TO defaults to it, and listing
+        # both makes a two-secret setup look like a three-secret one.
         missing.append("EMAIL_TO")
     return missing
 
@@ -96,6 +144,9 @@ def verify(config: Config, timeout: float = 30.0) -> str:
     """Log in and disconnect, without sending anything."""
     if not configured():
         raise EmailError("missing " + ", ".join(missing_settings()))
+    problem = credential_problem(config)
+    if problem:
+        raise EmailError(problem)
     try:
         with _connect(config, timeout) as server:
             server.login(sender(), password())
@@ -118,6 +169,9 @@ def send(
 ) -> DeliveryResult:
     if not configured():
         return DeliveryResult("email", False, "not configured: " + ", ".join(missing_settings()))
+    problem = credential_problem(config)
+    if problem:
+        return DeliveryResult("email", False, problem)
 
     message = build_message(subject, text_body, html_body)
     try:

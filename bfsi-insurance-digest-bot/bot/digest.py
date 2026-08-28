@@ -85,6 +85,7 @@ class Digest:
     sources_total: int = 0
     stats: Stats = field(default_factory=Stats)
     rejected: list[tuple[Article, Verdict]] = field(default_factory=list)
+    quotes: list = field(default_factory=list)
 
     @property
     def articles(self) -> list[Article]:
@@ -216,12 +217,13 @@ def build_digest(
     now: datetime | None = None,
     store: SeenStore | None = None,
     fetch_fn: FetchFn | None = None,
+    quote_fn=None,
     keep_rejected: bool = False,
 ) -> Digest:
     """Run the whole pipeline and return the finished brief.
 
     `store` may be None (every story counts as new — used by `preview`), and
-    `fetch_fn` may be swapped for a fixture loader in tests.
+    `fetch_fn` / `quote_fn` may be swapped for fixtures in tests.
     """
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     zone = local_zone(config.digest.timezone)
@@ -261,6 +263,21 @@ def build_digest(
     selected = apply_caps(accepted, config)
     stats.published = len(selected)
 
+    # After selection on purpose: a quote is paired with the stories that
+    # actually made the brief, not with everything that scored.
+    quotes = []
+    watchlist = config.enabled_watchlist
+    if watchlist:
+        from . import quotes as quotes_module
+
+        fetch_quotes = quote_fn or quotes_module.fetch_all
+        quotes = list(fetch_quotes(watchlist, config.fetch))
+        quotes_module.attach_stories(quotes, selected)
+        unavailable = [q.entry.symbol for q in quotes if not q.ok]
+        if unavailable:
+            # Not a failure worth stopping for: the news is the brief.
+            log.warning("no price for %s", ", ".join(unavailable))
+
     digest = Digest(
         generated_at=now.astimezone(zone),
         window_start=window_start.astimezone(zone),
@@ -270,6 +287,7 @@ def build_digest(
         sources_total=len(sources),
         stats=stats,
         rejected=rejected if keep_rejected else [],
+        quotes=quotes,
     )
     log.info(
         "digest built: %d entries -> %d in window -> %d relevant -> %d unique -> %d new -> %d sent",

@@ -5,6 +5,7 @@
     python -m bot preview          print the brief to the terminal
     python -m bot check-sources    fetch every feed and report on it
     python -m bot test-delivery    verify the Telegram and Gmail credentials
+    python -m bot telegram-chats   find your TELEGRAM_CHAT_ID
 """
 
 from __future__ import annotations
@@ -216,12 +217,20 @@ def cmd_test_delivery(args: argparse.Namespace) -> int:
     from .channels import email_smtp, telegram
 
     problems = 0
+    checked = 0
 
     print("Telegram")
-    if not telegram.configured():
+    if not config.telegram.enabled:
+        # A channel switched off on purpose is not a fault. Reporting it as one
+        # would mean this command can never come back clean on an e-mail-only
+        # setup, which is exactly when you most want to trust its verdict.
+        print("  – off in settings.yaml (delivery.telegram.enabled)")
+    elif not telegram.configured():
         print("  ✗ not configured: " + ", ".join(telegram.missing_settings()))
         problems += 1
+        checked += 1
     else:
+        checked += 1
         try:
             print(f"  ✓ {telegram.verify()}")
             if args.send:
@@ -235,10 +244,14 @@ def cmd_test_delivery(args: argparse.Namespace) -> int:
             problems += 1
 
     print("\nEmail")
-    if not email_smtp.configured():
+    if not config.email.enabled:
+        print("  – off in settings.yaml (delivery.email.enabled)")
+    elif not email_smtp.configured():
         print("  ✗ not configured: " + ", ".join(email_smtp.missing_settings()))
         problems += 1
+        checked += 1
     else:
+        checked += 1
         try:
             print(f"  ✓ {email_smtp.verify(config)}")
             if args.send:
@@ -254,11 +267,67 @@ def cmd_test_delivery(args: argparse.Namespace) -> int:
             print(f"  ✗ {exc}")
             problems += 1
 
+    if not checked:
+        print("\nEvery channel is off — the brief has nowhere to go.")
+        return EXIT_DELIVERY_FAILED
     if problems:
         print(f"\n{problems} channel(s) need attention — see README §Setup.")
-    else:
-        print("\nBoth channels are ready.")
-    return EXIT_OK if problems == 0 else EXIT_DELIVERY_FAILED
+        return EXIT_DELIVERY_FAILED
+    print(f"\n{checked} channel(s) ready.")
+    return EXIT_OK
+
+
+# --------------------------------------------------------------------------- #
+# telegram-chats
+# --------------------------------------------------------------------------- #
+
+def cmd_telegram_chats(args: argparse.Namespace) -> int:
+    """Print the chat ids this bot can see, so you can set TELEGRAM_CHAT_ID.
+
+    Deliberately needs only the token. It is the one setup step that cannot be
+    done from a config file — a bot may not open a conversation, so the id does
+    not exist until you message the bot, and then only its inbox knows it.
+    """
+    _load(args)
+    from .channels import telegram
+
+    if not telegram.token():
+        print("✗ TELEGRAM_BOT_TOKEN is not set.")
+        print("  Get a token from @BotFather (/newbot), then set it and try again.")
+        return EXIT_DELIVERY_FAILED
+
+    try:
+        me = telegram._call("getMe", {}, 20.0)
+        chats = telegram.recent_chats()
+    except telegram.TelegramError as exc:
+        print(f"✗ {exc}")
+        return EXIT_DELIVERY_FAILED
+
+    print(f"Bot @{me.get('username', '?')} ({me.get('first_name', '')})\n")
+
+    if not chats:
+        print("No chats yet — which is expected until you talk to the bot first.")
+        print(f"\n  1. Open https://t.me/{me.get('username', '')}")
+        print("  2. Press Start, or send it any message")
+        print("  3. Run this again\n")
+        print("If you have already done that and still see nothing: Telegram drops")
+        print("updates after 24 hours, and returns none at all while a webhook is")
+        print("set. Sending a fresh message fixes the first.")
+        return EXIT_DELIVERY_FAILED
+
+    print(f"{'chat id':>16}  {'type':<10} who")
+    print("-" * 56)
+    for chat in chats:
+        who = chat["label"]
+        if chat["username"]:
+            who += f" (@{chat['username']})"
+        print(f"{chat['id']:>16}  {chat['type']:<10} {who}")
+    print("-" * 56)
+
+    print(f"\nSet TELEGRAM_CHAT_ID to {chats[0]['id']}"
+          + (" (several ids: separate them with commas)" if len(chats) > 1 else ""))
+    print("Then `test-delivery --send` to confirm a message actually arrives.")
+    return EXIT_OK
 
 
 # --------------------------------------------------------------------------- #
@@ -301,6 +370,11 @@ def build_parser() -> argparse.ArgumentParser:
     test = subparsers.add_parser("test-delivery", help="verify Telegram and Gmail credentials")
     test.add_argument("--send", action="store_true", help="also send a real test message")
     test.set_defaults(func=cmd_test_delivery)
+
+    chats = subparsers.add_parser(
+        "telegram-chats", help="list the chats this bot can see, to find TELEGRAM_CHAT_ID"
+    )
+    chats.set_defaults(func=cmd_telegram_chats)
     return parser
 
 

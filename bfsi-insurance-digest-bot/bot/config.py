@@ -170,6 +170,22 @@ class EmailSettings:
 
 
 @dataclass(frozen=True)
+class WatchlistEntry:
+    """One instrument whose price rides along with the news.
+
+    `match` is what links the price to the day's stories — the names a headline
+    would actually use. It defaults to the display name, which is right for
+    "Max Financial" and wrong for a company the press calls something else, so
+    it is worth setting explicitly.
+    """
+
+    symbol: str          # as the quote service knows it, e.g. MFSL.NS
+    name: str            # as the brief should print it
+    match: tuple[str, ...] = ()
+    enabled: bool = True
+
+
+@dataclass(frozen=True)
 class Config:
     digest: DigestSettings
     fetch: FetchSettings
@@ -181,11 +197,16 @@ class Config:
     sources: tuple[Source, ...]
     domain_gate: tuple[str, ...] = ()
     exclude: tuple[str, ...] = ()
+    watchlist: tuple[WatchlistEntry, ...] = ()
     config_dir: Path = DEFAULT_CONFIG_DIR
 
     @property
     def enabled_sources(self) -> tuple[Source, ...]:
         return tuple(s for s in self.sources if s.enabled)
+
+    @property
+    def enabled_watchlist(self) -> tuple[WatchlistEntry, ...]:
+        return tuple(w for w in self.watchlist if w.enabled)
 
     def section(self, section_id: str) -> Section | None:
         for section in self.sections:
@@ -292,6 +313,38 @@ def _parse_sections(raw: Mapping[str, Any], where: str) -> tuple[Section, ...]:
             )
         )
     return tuple(sections)
+
+
+def _parse_watchlist(raw: Any, where: str) -> tuple[WatchlistEntry, ...]:
+    """Optional, and empty is a perfectly good answer — the brief predates it."""
+    if raw is None:
+        return ()
+    if not isinstance(raw, list):
+        raise ConfigError(f"{where}: 'watchlist' must be a list")
+
+    entries: list[WatchlistEntry] = []
+    seen: set[str] = set()
+    for index, item in enumerate(raw):
+        label = f"{where}: watchlist[{index}]"
+        if not isinstance(item, Mapping):
+            raise ConfigError(f"{label} must be a mapping")
+        symbol = str(_require(item, "symbol", label)).strip()
+        if not symbol:
+            raise ConfigError(f"{label}: 'symbol' must not be empty")
+        if symbol in seen:
+            raise ConfigError(f"{label}: duplicate symbol {symbol!r}")
+        seen.add(symbol)
+        name = str(item.get("name", symbol)).strip() or symbol
+        match = _as_str_list(item.get("match"), "match", label) or (name,)
+        entries.append(
+            WatchlistEntry(
+                symbol=symbol,
+                name=name,
+                match=match,
+                enabled=_as_bool(item.get("enabled", True), "enabled", label),
+            )
+        )
+    return tuple(entries)
 
 
 def load_config(config_dir: str | os.PathLike[str] | None = None) -> Config:
@@ -426,5 +479,6 @@ def load_config(config_dir: str | os.PathLike[str] | None = None) -> Config:
         sources=sources,
         domain_gate=_as_str_list(topics_raw.get("domain_gate"), "domain_gate", "topics.yaml"),
         exclude=_as_str_list(topics_raw.get("exclude"), "exclude", "topics.yaml"),
+        watchlist=_parse_watchlist(settings_raw.get("watchlist"), "settings.yaml"),
         config_dir=directory,
     )

@@ -106,6 +106,58 @@ def verify(timeout: float = 20.0) -> str:
     return f"bot @{me.get('username', '?')} → " + ", ".join(names)
 
 
+#: Update kinds that carry a chat. `message` covers the normal case — you
+#: messaging the bot — and the rest cover a group, a channel, or the bot being
+#: added somewhere, which are the other ways a chat id comes into existence.
+_CHAT_BEARING = (
+    "message", "edited_message", "channel_post", "edited_channel_post",
+    "my_chat_member", "chat_member",
+)
+
+
+def recent_chats(timeout: float = 20.0) -> list[dict]:
+    """Every chat that has spoken to this bot lately, newest first.
+
+    This is how you find TELEGRAM_CHAT_ID: a bot cannot message you first, so
+    you message it, and its inbox is then the only place the id exists. Needs
+    the token alone — the chat id is what it is for.
+
+    Telegram keeps unread updates for 24 hours and returns nothing at all while
+    a webhook is set, so an empty list means "say something to the bot", not
+    "the token is wrong".
+    """
+    if not token():
+        raise TelegramError("missing TELEGRAM_BOT_TOKEN")
+
+    seen: dict[str, dict] = {}
+    for update in _call("getUpdates", {"limit": 100, "timeout": 0}, timeout):
+        for kind in _CHAT_BEARING:
+            payload = update.get(kind)
+            if not isinstance(payload, dict):
+                continue
+            chat = payload.get("chat")
+            if not isinstance(chat, dict) or chat.get("id") is None:
+                continue
+            chat_id = str(chat["id"])
+            label = (
+                chat.get("title")
+                or " ".join(
+                    part for part in (chat.get("first_name"), chat.get("last_name")) if part
+                )
+                or chat.get("username")
+                or "—"
+            )
+            # Updates arrive oldest first, so a later one legitimately wins.
+            seen[chat_id] = {
+                "id": chat_id,
+                "type": chat.get("type", "?"),
+                "label": label,
+                "username": chat.get("username", ""),
+                "date": payload.get("date"),
+            }
+    return sorted(seen.values(), key=lambda c: c["date"] or 0, reverse=True)
+
+
 def send(messages: Sequence[str], config: Config, timeout: float = 30.0) -> DeliveryResult:
     """Send the rendered messages to every configured chat."""
     if not configured():

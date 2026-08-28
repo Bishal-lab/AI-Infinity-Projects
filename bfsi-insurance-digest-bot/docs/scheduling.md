@@ -5,8 +5,11 @@ has to run `python -m bot run` once a day. Three ways, in order of how little
 there is to maintain.
 
 **08:00 IST is 02:30 UTC.** India does not observe daylight saving, so that
-mapping never changes. Anything that runs on UTC — GitHub Actions, most cloud
+mapping never changes. Anything that runs on UTC and fires on time — most cloud
 servers, most containers — needs `30 2 * * *`.
+
+GitHub Actions is the exception, and it is deliberate: it fires late, so the
+workflow asks for `30 1 * * *` instead. See below.
 
 ---
 
@@ -15,13 +18,25 @@ servers, most containers — needs `30 2 * * *`.
 Already set up in `.github/workflows/bfsi-digest.yml`. Add the secrets listed in
 the main README and the schedule takes care of itself.
 
+Run it by hand from **Actions → BFSI digest → Run workflow**, which offers six
+modes: `run`, `dry-run`, `preview`, `check-sources`, `test-delivery` and
+`telegram-chats`. The last is a setup helper — with only `TELEGRAM_BOT_TOKEN`
+set it prints the chat ids the bot can see, so you can fill in
+`TELEGRAM_CHAT_ID` without ever handling the token yourself.
+
 Worth knowing:
 
 - **Scheduled workflows stop after 60 days** of no commits to the default
   branch. GitHub e-mails a warning first; any commit re-arms them.
-- **Scheduled runs are best-effort.** GitHub queues them and can drop them under
-  load. The 26-hour window means a skipped morning is picked up the next day
-  rather than lost.
+- **Scheduled runs are best-effort, and late.** GitHub queues them, can drop
+  them under load, and does not fire on the minute. Both runs measured on this
+  repo started ~60 minutes behind: asked 02:30 UTC, started 03:29:14 (23 Aug)
+  and 03:30:49 (24 Aug). That is why the workflow asks for `30 1 * * *`
+  (07:00 IST) rather than the arithmetically correct `30 2 * * *` — an hour of
+  lead time puts 08:00 IST in the middle of the window rather than at its
+  earliest edge. Re-measure before changing it; if the delay shifts, move the
+  cron rather than the expectation. A skipped morning is not lost either way:
+  the 26-hour window picks it up the next day.
 - **The runner is ephemeral**, so `state/seen.json` is carried between runs in
   the Actions cache. An evicted cache costs one repeated story, nothing more.
 - **Check the run.** The job fails loudly on a delivery error, and GitHub

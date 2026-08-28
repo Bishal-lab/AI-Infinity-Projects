@@ -1,8 +1,9 @@
 # BFSI & Life Insurance Daily Brief
 
 A small, self-contained bot that reads the BFSI press every morning, keeps the
-stories that matter to a life-insurance reader, and delivers one brief to
-**Telegram** and **Gmail** at **08:00 IST**.
+stories that matter to a life-insurance reader, and delivers one brief by
+**e-mail** at **08:00 IST**. Telegram is supported too, and switched off — one
+line in `config/settings.yaml` turns it on.
 
 No API keys for news, no scraping, no paid tiers: it reads public RSS/Atom feeds
 from specialist BFSI desks, the RBI, the general business press, and targeted
@@ -39,8 +40,8 @@ Window 21 Aug 06:00 – 22 Aug 08:00 (IST) · 11/11 sources responded
 
 - [What it actually does](#what-it-actually-does)
 - [Quick start](#quick-start)
-- [Setting up Telegram](#setting-up-telegram)
 - [Setting up Gmail](#setting-up-gmail)
+- [Setting up Telegram — optional](#setting-up-telegram--optional)
 - [Scheduling it for 08:00 IST](#scheduling-it-for-0800-ist)
 - [Tuning what you receive](#tuning-what-you-receive)
 - [Command reference](#command-reference)
@@ -93,14 +94,20 @@ pip install -r requirements.txt
 cp .env.example .env      # then fill in the four credentials
 python -m bot check-sources   # are the feeds alive?
 python -m bot preview         # what would today's brief say?
-python -m bot test-delivery   # are Telegram and Gmail wired up?
+python -m bot test-delivery   # is delivery wired up?
 python -m bot run             # send it
 ```
 
 `preview` and `check-sources` need no credentials at all, so you can see what
 the brief looks like before setting anything up.
 
-## Setting up Telegram
+## Setting up Telegram — optional
+
+Off by default: `delivery.telegram.enabled: false` in `config/settings.yaml`.
+Set it to `true` to get the brief in Telegram as well as, or instead of,
+e-mail — then follow the steps below. `test-delivery` skips a channel that is
+off rather than reporting it as broken, so an e-mail-only setup still comes
+back clean.
 
 1. Open Telegram, message **@BotFather**, send `/newbot`, and follow the two
    prompts (a display name, then a username ending in `bot`).
@@ -108,15 +115,40 @@ the brief looks like before setting anything up.
    `TELEGRAM_BOT_TOKEN`.
 3. **Send your new bot a message.** A bot cannot start a conversation; until you
    write to it first, it has no permission to write to you.
-4. Open `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates` in a browser and
-   copy `result[0].message.chat.id`. That is `TELEGRAM_CHAT_ID`.
+4. With the token set, ask the bot who it can see:
 
-For a group: add the bot to the group, send any message there, and use the
-group's chat id from the same URL (it will be negative). Several destinations —
-separate the ids with commas.
+   ```bash
+   TELEGRAM_BOT_TOKEN=... python -m bot telegram-chats
+   ```
 
-`python -m bot test-delivery` confirms the token and resolves every chat id;
-add `--send` to receive a real test message.
+   ```
+   Bot @your_bot (Your Bot)
+
+            chat id  type       who
+   --------------------------------------------------------
+            12345678  private    Bishal (@bishal)
+   --------------------------------------------------------
+
+   Set TELEGRAM_CHAT_ID to 12345678
+   ```
+
+   This deliberately needs the token alone — the chat id is what it is looking
+   up. If it prints nothing, you have not completed step 3; send the bot a
+   message and run it again.
+
+For a group: add the bot to the group, send any message there, and run the same
+command — the group appears with a negative id. Several destinations: separate
+the ids with commas.
+
+The raw equivalent is `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates`,
+whose `result[0].message.chat.id` is the same number. Worth knowing when you
+want to see what Telegram actually returned.
+
+`python -m bot test-delivery` then confirms the token and resolves every chat
+id; add `--send` to receive a real test message.
+
+**On GitHub Actions**, where the token lives as a secret and you never see it,
+run the workflow with mode `telegram-chats` — same output, in the job log.
 
 ## Setting up Gmail
 
@@ -126,8 +158,16 @@ Password**:
 1. <https://myaccount.google.com> → **Security** → turn on **2-Step
    Verification** (App Passwords do not exist without it).
 2. Same page → **App passwords** → create one, name it anything.
-3. Google shows 16 characters. That is `GMAIL_APP_PASSWORD` — spaces in it are
-   ignored, so keep or drop them.
+3. Google shows **16 lowercase letters**, in four groups of four. That is
+   `GMAIL_APP_PASSWORD` — spaces are stripped, so keep or drop them.
+
+An App Password is not a password you choose. If what you have is longer or
+shorter than 16 characters, or contains a capital or a digit, it is not one —
+Gmail's SMTP will reject it every time, and `test-delivery` now says so before
+it dials out rather than letting the first 08:00 run discover it.
+
+Your ordinary Google account password is never used here, and should never be
+put in a secret, a `.env` file, or a chat window.
 
 Set `GMAIL_ADDRESS` to the sending account and `EMAIL_TO` to wherever the brief
 should land (defaults to the sender; comma-separate for several).
@@ -141,25 +181,35 @@ that expects STARTTLS on port 587.
 ### GitHub Actions (nothing to host)
 
 `.github/workflows/bfsi-digest.yml` in the repository root already does this.
-Add five repository secrets under **Settings → Secrets and variables →
+Add two repository secrets under **Settings → Secrets and variables →
 Actions**:
 
 | Secret | Value |
 | --- | --- |
-| `TELEGRAM_BOT_TOKEN` | from BotFather |
-| `TELEGRAM_CHAT_ID` | from `getUpdates` |
 | `GMAIL_ADDRESS` | the sending Gmail account |
 | `GMAIL_APP_PASSWORD` | the 16-character App Password |
-| `EMAIL_TO` | optional; defaults to `GMAIL_ADDRESS` |
+
+Two more are optional: `EMAIL_TO` if the brief should land somewhere other than
+the sending account, and `EMAIL_FROM_NAME` for the display name on `From:`.
+
+Only if you turn Telegram on as well: `TELEGRAM_BOT_TOKEN` and
+`TELEGRAM_CHAT_ID`. The workflow already reads both, so nothing there needs
+editing.
 
 Then run the workflow once by hand (**Actions → BFSI digest → Run workflow**),
 choosing `test-delivery` and then `run`, to confirm it works before you rely on
 the schedule.
 
-The cron line is `30 2 * * *` — **02:30 UTC, which is 08:00 IST**. Actions cron
-is always UTC and has no timezone setting; the half-hour offset also keeps the
-job out of the on-the-hour queue, where scheduled runs routinely start ten to
-fifteen minutes late.
+The cron line is `30 1 * * *` — 01:30 UTC, which is **07:00 IST, an hour before
+the brief is wanted**. Actions cron is always UTC and has no timezone setting,
+and it does not fire on the minute: both scheduled runs measured on this repo
+started ~60 minutes late (asked 02:30 UTC, started 03:29 and 03:30). Asking an
+hour early puts 08:00 IST inside the delivery window instead of at its floor —
+a punctual morning arrives at 07:00, a typical one at 08:00.
+
+That hour of lead time is an Actions quirk, not arithmetic: 08:00 IST really is
+02:30 UTC, and a scheduler that fires on time (cron or a systemd timer on your
+own machine, below) should use `30 2 * * *`.
 
 Two Actions-specific things to know:
 
@@ -242,6 +292,7 @@ not, and the score and reason for each.
 | `python -m bot preview --html out/x.html` | write the HTML e-mail to a file |
 | `python -m bot check-sources` | fetch every feed; report status, item count, freshness |
 | `python -m bot test-delivery [--send]` | verify Telegram and Gmail credentials |
+| `python -m bot telegram-chats` | list the chats the bot can see, to find `TELEGRAM_CHAT_ID` |
 
 Global flags: `--config DIR`, `--env PATH`, `-v/--verbose`.
 
@@ -291,7 +342,13 @@ prints the error per feed; open the URL in a browser, find the publisher's
 current RSS link, and update `config/sources.yaml`.
 
 **Telegram: "chat not found".** You have not messaged the bot yet, or the chat
-id is wrong. Message the bot, reload `getUpdates`, copy the id again.
+id is wrong. Message the bot, then run `python -m bot telegram-chats` and copy
+the id it prints.
+
+**`telegram-chats` prints no chats.** Normal before you have written to the bot
+— it cannot start the conversation. If you have written to it: Telegram discards
+unread updates after 24 hours, and returns none at all while a webhook is set.
+A fresh message to the bot fixes the first case.
 
 **Telegram: "can't parse entities".** A headline contained markup the renderer
 did not escape. Please open an issue with the headline — everything is escaped

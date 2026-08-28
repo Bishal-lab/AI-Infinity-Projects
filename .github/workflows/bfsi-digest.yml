@@ -1,24 +1,43 @@
-# Sends the BFSI & life insurance brief to Telegram and Gmail every morning.
+# Sends the BFSI & life insurance brief to Gmail every morning.
 #
-# The schedule is UTC, always: 02:30 UTC is 08:00 IST. The half-hour offset is
-# deliberate — GitHub's scheduler queues heavily on the hour, and a job asked
-# for at :00 routinely starts ten or fifteen minutes late.
+# The schedule is UTC, always. 01:30 UTC is 07:00 IST — an hour before the brief
+# is wanted, and that hour is deliberate.
 #
-# Two things worth knowing about scheduled workflows:
+# GitHub's scheduler is best-effort and queues; it does not fire on the minute.
+# The two scheduled runs so far both started ~60 minutes late:
+#
+#   asked 02:30 UTC → started 03:29:14 UTC (23 Aug)   59m late
+#   asked 02:30 UTC → started 03:30:49 UTC (24 Aug)   61m late
+#
+# At 02:30 the brief could only ever arrive at or after 08:00 IST, and in
+# practice arrived at 09:00. Asking an hour early puts 08:00 inside the window
+# rather than at its floor: on a typical morning it lands at 08:00, and on a
+# morning GitHub is quick, at 07:00 — early being the better failure.
+#
+# Re-measure before changing this. If the delay shifts, move the cron, not the
+# expectation.
+#
+# Two more things worth knowing about scheduled workflows:
 #   * GitHub disables them after 60 days with no commits to the default branch.
 #     A single commit re-arms them.
 #   * A scheduled run is best-effort. If GitHub drops one, the next morning's
 #     26-hour window picks up the stories that were missed.
 #
+# The brief goes to e-mail only; Telegram is off in config/settings.yaml.
+#
 # Required repository secrets (Settings → Secrets and variables → Actions):
-#   TELEGRAM_BOT_TOKEN  TELEGRAM_CHAT_ID  GMAIL_ADDRESS  GMAIL_APP_PASSWORD
+#   GMAIL_ADDRESS  GMAIL_APP_PASSWORD
 # Optional: EMAIL_TO (defaults to GMAIL_ADDRESS), EMAIL_FROM_NAME
+#
+# The two TELEGRAM_* secrets below are read but unused while that channel is
+# off. They stay wired up so turning Telegram back on is a one-line config
+# change rather than a workflow edit as well.
 
 name: BFSI digest
 
 on:
   schedule:
-    - cron: "30 2 * * *"
+    - cron: "30 1 * * *"
   workflow_dispatch:
     inputs:
       mode:
@@ -31,6 +50,7 @@ on:
           - preview         # build and print it into this job log, send nothing
           - check-sources   # fetch every feed and report on its health
           - test-delivery   # verify the Telegram and Gmail credentials
+          - telegram-chats  # print the chat ids the bot can see
 
 concurrency:
   group: bfsi-digest
@@ -100,6 +120,14 @@ jobs:
       - name: Verify the delivery credentials
         if: env.MODE == 'test-delivery'
         run: python -m bot test-delivery
+
+      # Setup only. A bot cannot message you first, so TELEGRAM_CHAT_ID does not
+      # exist until you message the bot — and then only Telegram knows it. This
+      # asks, using the token alone, and prints the ids here. The runner has the
+      # open network the lookup needs; a laptop behind a proxy often does not.
+      - name: Find the Telegram chat id
+        if: env.MODE == 'telegram-chats'
+        run: python -m bot telegram-chats
 
       - name: Save the seen-store
         # Runs even when delivery failed, so a retry does not re-send what did
