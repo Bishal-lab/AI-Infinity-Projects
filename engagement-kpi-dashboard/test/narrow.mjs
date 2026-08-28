@@ -1,8 +1,8 @@
-import { chromium } from 'playwright';
+import { launch } from './browser.mjs';
 const ROOT = new URL('../', import.meta.url).pathname;
 import path from 'path'; import fs from 'fs';
 const ALL = fs.readdirSync(path.resolve(ROOT, 'samples')).sort().map(f => path.resolve(ROOT, 'samples', f));
-const b = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium' });
+const b = await launch();
 for (const w of [390, 820]) {
   const p = await b.newPage({ viewport:{width:w,height:900} });
   await p.goto('file://' + path.resolve(ROOT, 'dashboard.html'));

@@ -4,7 +4,7 @@
  * either way. This is the test that proves it: if a number here ever differs
  * from test/gold.mjs, the two ingestion paths have stopped being one path.
  */
-import { chromium } from 'playwright';
+import { launch } from './browser.mjs';
 import path from 'path';
 import fs from 'fs';
 const ROOT = new URL('../', import.meta.url).pathname;
@@ -13,7 +13,7 @@ const outDir = path.resolve(ROOT, 'importer', 'out');
 const generated = fs.readdirSync(outDir).filter(f => f.endsWith('.html')).sort().pop();
 if (!generated) { console.error('no generated page — run importer/run.sh first'); process.exit(1); }
 
-const b = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium' });
+const b = await launch();
 const errors = [], reqs = [];
 const page = await b.newPage({ viewport:{ width:1360, height:900 } });
 page.on('pageerror', e => errors.push(e.message));

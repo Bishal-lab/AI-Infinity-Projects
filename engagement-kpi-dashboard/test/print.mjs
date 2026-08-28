@@ -6,14 +6,14 @@
  * until it comes out of a printer — so this asserts the resolved colours
  * rather than the presence of the stylesheet.
  */
-import { chromium } from 'playwright';
+import { launch } from './browser.mjs';
 import path from 'path';
 import fs from 'fs';
 const ROOT = new URL('../', import.meta.url).pathname;
 const ALL = fs.readdirSync(path.resolve(ROOT, 'samples')).sort()
   .map(f => path.resolve(ROOT, 'samples', f));
 
-const browser = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium' });
+const browser = await launch();
 let bad = 0;
 
 for (const scheme of ['light', 'dark']) {

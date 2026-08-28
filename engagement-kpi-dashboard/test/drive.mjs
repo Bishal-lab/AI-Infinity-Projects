@@ -1,10 +1,10 @@
-import { chromium } from 'playwright';
+import { launch } from './browser.mjs';
 const ROOT = new URL('../', import.meta.url).pathname;
 import path from 'path'; import fs from 'fs';
 const R = f => path.resolve(ROOT, 'samples', f);
 const ALL = fs.readdirSync(path.resolve(ROOT, 'samples')).sort().map(R);
 
-const browser = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium' });
+const browser = await launch();
 const errors = [], reqs = [];
 async function open(theme) {
   const page = await browser.newPage({ viewport:{width:1360,height:1000},

@@ -6,13 +6,13 @@
  * hides itself when the capability does not answer. That branch is asserted
  * here by faking the viewer object.
  */
-import { chromium } from 'playwright';
+import { launch } from './browser.mjs';
 import path from 'path'; import fs from 'fs';
 const ROOT = new URL('../', import.meta.url).pathname;
 const ALL = fs.readdirSync(path.resolve(ROOT, 'samples')).sort()
   .map(f => path.resolve(ROOT, 'samples', f));
 
-const b = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium' });
+const b = await launch();
 
 // --- local file: the Blob path actually produces a file
 const p = await b.newPage({ viewport:{ width:1280, height:900 } });
