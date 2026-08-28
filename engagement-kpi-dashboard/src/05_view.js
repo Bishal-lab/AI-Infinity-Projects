@@ -12,8 +12,43 @@ function card(title, sub, extra) {
   box.appendChild(head);
   const body = el('div', 'card-body');
   box.appendChild(body);
-  return { box, body };
+  return { box, head, body };
 }
+
+/** The same figures the chart draws, as a table.
+ *
+ *  `hover()` binds mousemove and nothing else, so a tooltip is unreachable
+ *  by keyboard and invisible on touch. Every chart therefore carries the
+ *  numbers it is drawn from behind a toggle — which is also the relief the
+ *  palette validator requires for the light-mode series that sit below 3:1.
+ */
+let tableSeq = 0;
+function withNumbers(c, headers, rows) {
+  if (!rows.length) return c;
+  const id = 'numbers-' + (++tableSeq);
+  const btn = el('button', 'numbers', 'Numbers');
+  btn.type = 'button';
+  btn.setAttribute('aria-expanded', 'false');
+  btn.setAttribute('aria-controls', id);
+  const wrap = table(headers, rows);
+  wrap.id = id;
+  wrap.hidden = true;
+  btn.addEventListener('click', () => {
+    const opening = wrap.hidden;
+    wrap.hidden = !opening;
+    btn.setAttribute('aria-expanded', String(opening));
+    btn.textContent = opening ? 'Hide numbers' : 'Numbers';
+  });
+  c.head.appendChild(btn);
+  c.body.appendChild(wrap);
+  return c;
+}
+
+/** Stage rows shared by the funnels — each stage as a share of the one above. */
+const funnelRows = stages => stages.map((st, i) => [
+  st.label, fmtInt(st.value),
+  i ? fmtPct(rate(st.value, stages[i - 1].value)) : '—',
+]);
 
 /** What a section shows when its source has not been dropped in yet. Not a
  *  blank space and not an error — the columns it is waiting for. */
@@ -73,6 +108,33 @@ function options(sel, values, label) {
   values.forEach(v => { const o = el('option', null, v); o.value = v; sel.appendChild(o); });
 }
 
+/** Every campaign date loaded, unfiltered — the bounds the date picker offers,
+ *  so it can never propose a range with no data in it. */
+function campaignDates() {
+  return SOURCES.filter(src => src.grain === 'campaign')
+    .flatMap(src => DATA[src.id] || [])
+    .map(r => asDate(r.Campaign_Date))
+    .filter(d => d && !isNaN(d))
+    .sort((a, b) => a - b);
+}
+
+const isoDay = d => d instanceof Date && !isNaN(d) ? d.toISOString().slice(0, 10) : '';
+
+/** The active filters in words. Shown on screen and always printed: a sheet of
+ *  filtered numbers that does not say it was filtered is the one way this
+ *  document can actively mislead. */
+function filterSummary() {
+  const out = [];
+  if (FILTER.channel) out.push('Channel: ' + FILTER.channel);
+  if (FILTER.location) out.push('Location: ' + FILTER.location);
+  if (FILTER.path) out.push('Learning path: ' + FILTER.path);
+  if (FILTER.from || FILTER.to) {
+    out.push('Dates: ' + (FILTER.from ? fmtDay(FILTER.from) : 'earliest')
+      + ' to ' + (FILTER.to ? fmtDay(FILTER.to) : 'latest'));
+  }
+  return out;
+}
+
 function renderFilters() {
   const people = [...(DATA.webinar || []), ...(DATA.lms || [])];
   const uniq = key => [...new Set(people.map(r => r[key]).filter(Boolean))].sort();
@@ -83,8 +145,22 @@ function renderFilters() {
   $('#f-channel').value = FILTER.channel;
   $('#f-location').value = FILTER.location;
   $('#f-path').value = FILTER.path;
-  $('#filters').hidden = !people.length;
+  const dates = campaignDates();
+  const from = $('#f-from'), to = $('#f-to');
+  for (const input of [from, to]) {
+    input.min = dates.length ? isoDay(dates[0]) : '';
+    input.max = dates.length ? isoDay(dates[dates.length - 1]) : '';
+    input.disabled = !dates.length;
+  }
+  from.value = isoDay(FILTER.from);
+  to.value = isoDay(FILTER.to);
+
+  $('#filters').hidden = !people.length && !dates.length;
   $('#seg-note').hidden = segmentable('campaign');
+
+  const active = filterSummary();
+  $('#applied').textContent = active.length ? 'Filtered by ' + active.join(' · ') : '';
+  $('#applied').hidden = !active.length;
 }
 
 /* --------------------------------------------------------------- band 1 -- */
@@ -146,14 +222,16 @@ function renderComms(K) {
   const c1 = card('Email funnel',
     'Sent to clicked, summed across every campaign in range.');
   if (email.length) {
-    c1.body.appendChild(funnel([
+    const stages = [
       { label:'Sent', value:sum(email, 'Sent') },
       { label:'Delivered', value:sum(email, 'Delivered') },
       { label:'Opened', value:sum(email, 'Opened') },
       { label:'Clicked', value:sum(email, 'Clicked') },
-    ]));
+    ];
+    c1.body.appendChild(funnel(stages));
     c1.body.appendChild(el('p', 'foot',
       `Each percentage is of the stage above it. ${fmtPct(rate(sum(email, 'Clicked'), sum(email, 'Opened')))} of the people who opened went on to click.`));
+    withNumbers(c1, ['Stage', 'Messages', 'Of previous'], funnelRows(stages));
   } else c1.body.appendChild(awaiting(SOURCES[0]));
   wrap.appendChild(c1.box);
 
@@ -166,18 +244,26 @@ function renderComms(K) {
       { name:'Click rate', values:email.map(r => rate(N(r.Clicked), N(r.Delivered))) },
     ]));
     c2.body.appendChild(legend(['Open rate', 'Click rate']));
+    withNumbers(c2, ['Campaign', 'Delivered', 'Opened', 'Open %', 'Clicked', 'Click %'],
+      email.map(r => [r.Campaign, fmtInt(N(r.Delivered)), fmtInt(N(r.Opened)),
+        fmtPct(rate(N(r.Opened), N(r.Delivered))), fmtInt(N(r.Clicked)),
+        fmtPct(rate(N(r.Clicked), N(r.Delivered)))]));
   } else c2.body.appendChild(awaiting(SOURCES[0]));
   wrap.appendChild(c2.box);
 
   const c3 = card('WhatsApp', 'The second communication channel.');
   if (has('whatsapp')) {
     const wa = campaignRows('whatsapp');
-    c3.body.appendChild(funnel([
+    const stages = [
       { label:'Sent', value:sum(wa, 'Sent') },
       { label:'Delivered', value:sum(wa, 'Delivered') },
       { label:'Read', value:sum(wa, 'Read') },
       { label:'Clicked', value:sum(wa, 'Clicked') },
-    ]));
+    ];
+    c3.body.appendChild(funnel(stages));
+    c3.body.appendChild(el('p', 'foot',
+      `Read rates on WhatsApp run far above e-mail open rates, so the two channels are reported separately rather than blended into one "engagement" figure.`));
+    withNumbers(c3, ['Stage', 'Messages', 'Of previous'], funnelRows(stages));
   } else {
     c3.body.appendChild(awaiting(SOURCES[1]));
     c3.body.appendChild(el('p', 'foot',
@@ -194,6 +280,9 @@ function renderComms(K) {
     ]));
     c4.body.appendChild(el('p', 'foot',
       `Community_Members moves between ${fmtInt(Math.min(...viva.map(r => N(r.Community_Members))))} and ${fmtInt(Math.max(...viva.map(r => N(r.Community_Members))))} across consecutive days, which a community size does not do. Read the rate as daily activation of the set targeted that day.`));
+    withNumbers(c4, ['Date', 'Members targeted', 'Active users', 'Active %'],
+      viva.map(r => [fmtDay(asDate(r.Campaign_Date)), fmtInt(N(r.Community_Members)),
+        fmtInt(N(r.Active_Users)), fmtPct(rate(N(r.Active_Users), N(r.Community_Members)))]));
   } else c4.body.appendChild(awaiting(SOURCES[4]));
   wrap.appendChild(c4.box);
 
@@ -207,6 +296,8 @@ function renderComms(K) {
     const total = parts.reduce((a, p) => a + p.value, 0);
     c5.body.appendChild(el('p', 'foot',
       `${fmtInt(total)} interactions in total. ${fmtPct(rate(parts[0].value, total), 0)} are likes — the lowest-effort act available, which is why KPI 5 counts clicks rather than mixing these in.`));
+    withNumbers(c5, ['Interaction', 'Count', 'Share'],
+      parts.map(p => [p.label, fmtInt(p.value), fmtPct(rate(p.value, total))]));
   } else c5.body.appendChild(awaiting(SOURCES[4]));
   wrap.appendChild(c5.box);
 }
@@ -228,18 +319,17 @@ function renderLearning(K) {
   const c1 = card('Webinar funnel',
     'Employees in the export, through to a certificate issued.');
   if (web.length) {
-    const reg = web.filter(r => yes(r.Registered)).length;
-    const att = web.filter(r => yes(r.Attended)).length;
-    const cert = web.filter(r => yes(r.Certificate)).length;
-    c1.body.appendChild(funnel([
+    const stages = [
       { label:'Employees', value:population() },
-      { label:'Registered', value:reg },
-      { label:'Attended', value:att },
-      { label:'Certified', value:cert },
-    ]));
+      { label:'Registered', value:web.filter(r => yes(r.Registered)).length },
+      { label:'Attended', value:web.filter(r => yes(r.Attended)).length },
+      { label:'Certified', value:web.filter(r => yes(r.Certificate)).length },
+    ];
+    c1.body.appendChild(funnel(stages));
     const mins = web.filter(r => yes(r.Attended)).map(r => N(r.Duration_Min));
     c1.body.appendChild(el('p', 'foot',
       `Attendees stayed ${fmtNum(mins.reduce((a, b) => a + b, 0) / (mins.length || 1), 0)} minutes on average.`));
+    withNumbers(c1, ['Stage', 'People', 'Of previous'], funnelRows(stages));
   } else c1.body.appendChild(awaiting(SOURCES[2]));
   wrap.appendChild(c1.box);
 
@@ -247,11 +337,14 @@ function renderLearning(K) {
     'Where the drop-off between signing up and showing up actually happens.');
   if (web.length) {
     const groups = groupBy(web, 'Channel');
+    const reg = groups.map(g => g[1].filter(r => yes(r.Registered)).length);
+    const att = groups.map(g => g[1].filter(r => yes(r.Attended)).length);
     c2.body.appendChild(groupedBars(groups.map(g => g[0]), [
-      { name:'Registered', values:groups.map(g => g[1].filter(r => yes(r.Registered)).length) },
-      { name:'Attended', values:groups.map(g => g[1].filter(r => yes(r.Attended)).length) },
+      { name:'Registered', values:reg }, { name:'Attended', values:att },
     ]));
     c2.body.appendChild(legend(['Registered', 'Attended']));
+    withNumbers(c2, ['Channel', 'Registered', 'Attended', 'Show-up %'],
+      groups.map((g, i) => [g[0], fmtInt(reg[i]), fmtInt(att[i]), fmtPct(rate(att[i], reg[i]))]));
   } else c2.body.appendChild(awaiting(SOURCES[2]));
   wrap.appendChild(c2.box);
 
@@ -259,11 +352,12 @@ function renderLearning(K) {
     'Modules completed as a share of modules assigned.');
   if (lms.length) {
     const groups = groupBy(lms, 'Learning_Path');
-    c3.body.appendChild(hBars(groups.map(([name, rows]) => ({
+    const items = groups.map(([name, rows]) => ({
       label:name,
       value:rate(sum(rows, 'Modules_Completed'), sum(rows, 'Modules_Assigned')) || 0,
       rows,
-    })).sort((a, b) => b.value - a.value), {
+    })).sort((a, b) => b.value - a.value);
+    c3.body.appendChild(hBars(items, {
       fmt:v => fmtPct(v, 0),
       note:it => `${fmtInt(sum(it.rows, 'Modules_Completed'))} of ${fmtInt(sum(it.rows, 'Modules_Assigned'))} modules · ${it.rows.length} employees`,
     }));
@@ -271,6 +365,9 @@ function renderLearning(K) {
     const none = lms.filter(r => N(r.Modules_Completed) === 0).length;
     c3.body.appendChild(el('p', 'foot',
       `Measured in modules, not people: ${fmtInt(done)} of ${fmtInt(lms.length)} employees have finished everything assigned to them, and ${fmtInt(none)} have started nothing.`));
+    withNumbers(c3, ['Learning path', 'Employees', 'Assigned', 'Completed', 'Completion %'],
+      items.map(it => [it.label, fmtInt(it.rows.length), fmtInt(sum(it.rows, 'Modules_Assigned')),
+        fmtInt(sum(it.rows, 'Modules_Completed')), fmtPct(it.value)]));
   } else c3.body.appendChild(awaiting(SOURCES[3]));
   wrap.appendChild(c3.box);
 
@@ -278,11 +375,14 @@ function renderLearning(K) {
     'Employees by score band — the shape behind the average.');
   if (lms.length) {
     const scores = lms.map(r => N(r['Assessment_Score_%'])).filter(v => v > 0);
-    c4.body.appendChild(bandBars(BANDS.map(b => ({
+    const items = BANDS.map(b => ({
       label:b.label, value:scores.filter(s => s >= b.lo && s < b.hi).length,
-    })), { note:it => 'employees' }));
+    }));
+    c4.body.appendChild(bandBars(items, { note:() => 'employees' }));
     c4.body.appendChild(el('p', 'foot',
       `${fmtInt(scores.length)} employees have a recorded score, averaging ${fmtNum(scores.reduce((a, b) => a + b, 0) / (scores.length || 1))}%.`));
+    withNumbers(c4, ['Score band', 'Employees', 'Share'],
+      items.map(it => [it.label, fmtInt(it.value), fmtPct(rate(it.value, scores.length))]));
   } else c4.body.appendChild(awaiting(SOURCES[3]));
   wrap.appendChild(c4.box);
 }
@@ -329,17 +429,23 @@ function renderCross(K) {
   hero.appendChild(el('span', 'hero-v', idx.value == null ? '—' : fmtNum(idx.value, 0)));
   hero.appendChild(el('span', 'hero-u', '/ 100'));
   c2.body.appendChild(hero);
+  const points = p => p.value == null ? null
+    : p.weight * p.value * 100 / (K.weightSum || 1);
   c2.body.appendChild(hBars(K.parts.map(p => ({
     label:`${p.label} · ${Math.round(p.weight * 100)}%`,
     value:p.value == null ? 0 : p.value,
     p,
   })), { fmt:v => fmtPct(v, 0),
     note:it => it.p.value == null ? 'no data — weight redistributed'
-      : `contributes ${fmtNum(it.p.weight * it.p.value * 100 / (K.weightSum || 1), 1)} points` }));
+      : `contributes ${fmtNum(points(it.p), 1)} points` }));
   c2.body.appendChild(el('p', 'foot',
     K.live.length === K.parts.length
       ? 'Certification is measured against attendees, not the whole population — a certificate cannot be earned by someone who never attended.'
       : `${K.parts.length - K.live.length} component(s) have no data; the remaining weights were renormalised rather than counting the gap as zero.`));
+  withNumbers(c2, ['Component', 'Weight', 'Value', 'Points of 100'],
+    K.parts.map(p => [p.label, fmtPct(p.weight, 0),
+      p.value == null ? '—' : fmtPct(p.value),
+      p.value == null ? 'excluded' : fmtNum(points(p), 1)]));
   wrap.appendChild(c2.box);
 }
 

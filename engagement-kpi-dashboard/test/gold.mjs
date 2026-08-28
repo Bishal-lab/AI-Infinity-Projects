@@ -8,15 +8,19 @@ const code = ['01_xlsx.js','02_sources.js','03_kpis.js'].map(f => ROOT + 'src/' 
 const ctx = { console, Blob, Response, DecompressionStream, TextDecoder, Date, Math, Number, Set, Map, JSON, isFinite, parseFloat, String, Object, Array,
   document: { createElement: () => ({ }), querySelector: () => null } };
 vm.createContext(ctx);
-vm.runInContext(code + '\nglobalThis.__api = { DATA, kpis, readWorkbook, toRecords, employeeRows, campaignRows, sum, N, yes, fmtPct, fmtInt };', ctx);
+vm.runInContext(code + '\nglobalThis.__api = { DATA, kpis, readWorkbook, toRecords, employeeRows, campaignRows, sum, N, yes, fmtPct, fmtInt, claim };', ctx);
 const api = ctx.__api;
-const map = { '01_Email_Campaign_KPI.xlsx':'email', '03_Webinar_Attendance_Employee_Wise.xlsx':'webinar',
-  '04_LMS_Employee_Wise_Report.xlsx':'lms', '05_Viva_Engage_Campaign_KPI.xlsx':'viva' };
-for (const [f, id] of Object.entries(map)) {
+// Detection is by header signature, exactly as the page does it — so this
+// harness also proves a file lands in the right slot without being named.
+for (const f of fs.readdirSync(path.resolve(ROOT, 'samples')).sort()) {
   const b = fs.readFileSync(path.resolve(ROOT, 'samples', f));
-  const wb = await api.readWorkbook(b.buffer.slice(b.byteOffset, b.byteOffset+b.byteLength));
-  api.DATA[id] = api.toRecords(wb[0].rows).records;
+  const wb = await api.readWorkbook(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength));
+  for (const sheet of wb) {
+    const { headers, records } = api.toRecords(sheet.rows);
+    if (records.length) api.claim(headers, records);
+  }
 }
+
 const k = api.kpis();
 for (const t of k.list) {
   const v = t.value == null ? '—'

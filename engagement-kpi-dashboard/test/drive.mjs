@@ -67,6 +67,36 @@ console.log('6. channel=Axis →', f.join(' | '));
 console.log('   seg-note visible:', !(await page.locator('#seg-note').isHidden()));
 await page.screenshot({ path:ROOT + 'test/shot-filter.png', fullPage:true });
 
+// 6b — date range narrows the campaign KPIs and says so
+await page.selectOption('#f-channel', '');
+await page.waitForTimeout(300);
+const wide = await page.locator('.tile').nth(1).locator('.tile-value').textContent();
+await page.fill('#f-from', '2026-08-02');
+await page.fill('#f-to', '2026-08-03');
+await page.waitForTimeout(400);
+const narrowed = await page.locator('.tile').nth(1).locator('.tile-value').textContent();
+const employeeKpi = await page.locator('.tile').nth(7).locator('.tile-value').textContent();
+console.log('6b. dates 02–03 Aug — deliveries', wide, '→', narrowed,
+  '| employee KPI unchanged:', employeeKpi === '48.4%',
+  '| applied:', (await page.locator('#applied').textContent()).trim());
+await page.screenshot({ path:ROOT + 'test/shot-dates.png', fullPage:true });
+await page.click('#f-reset');
+await page.waitForTimeout(300);
+console.log('   after reset — deliveries', await page.locator('.tile').nth(1).locator('.tile-value').textContent(),
+  '| applied hidden:', await page.locator('#applied').isHidden());
+
+// 6c — numbers reachable without a mouse
+const toggle = page.locator('.numbers').nth(1);
+await toggle.focus();
+await page.keyboard.press('Enter');
+await page.waitForTimeout(200);
+const tblId = await toggle.getAttribute('aria-controls');
+const opened = await page.locator('#' + tblId).isVisible();
+const firstRow = await page.locator('#' + tblId + ' tbody tr').first().allInnerTexts();
+console.log('6c. keyboard toggle —', await toggle.getAttribute('aria-expanded'),
+  '| table visible:', opened, '|', JSON.stringify(firstRow));
+console.log('   toggles on every chart card:', await page.locator('.numbers').count());
+
 // 7 — geometry / overflow
 await page.selectOption('#f-channel', '');
 await page.waitForTimeout(400);

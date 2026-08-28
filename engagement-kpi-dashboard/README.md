@@ -60,21 +60,27 @@ Node 18+ with no dependencies.
 | `node test/drive.mjs` | empty state, a single file, a renamed file, the full set, the working panel, filtering, geometry, dark mode, and that no request leaves the page |
 | `node test/narrow.mjs` | no horizontal page scroll at 390 px or 820 px |
 | `node test/labels.mjs` | every label drawn on a mark clears 3.5:1 against that mark, in both themes |
+| `node test/print.mjs` | the print layout resolves to black on white in **both** colour schemes, controls are gone, and the active filters are on the page |
+| `node test/export.mjs` | the CSV export on all three routes — local Blob, viewer capability, and capability absent |
 
-Expected KPI values against the four sample files:
+Expected KPI values against the five sample files:
 
 ```
- 1. Campaigns Running                      5   [partial — WhatsApp absent]
- 2. Total Deliveries                  51,893   [partial — email only]
+ 1. Campaigns Running                      5   across email + WhatsApp + Viva
+ 2. Total Deliveries                  71,823   email + WhatsApp
  3. Email Engagement Rate              11.1%   5,738 ÷ 51,893
- 4. WhatsApp Engagement Rate               —   [awaiting file]
- 5. Overall Digital Engagement         11.1%   [partial]
+ 4. WhatsApp Engagement Rate           23.4%   4,655 ÷ 19,930
+ 5. Overall Digital Engagement         14.5%   10,393 clicks ÷ 71,823
  6. Webinar Registration Rate          88.3%   53 ÷ 60
  7. Webinar Attendance Rate            79.2%   42 ÷ 53
  8. Learning Completion Rate           48.4%   235 ÷ 486 modules
  9. Viva Engagement Rate               30.0%   10,002 ÷ 33,390
 10. Learning Engagement Index         64/100   all four components
 ```
+
+Drop only the four real exports and KPI 4 goes blank, KPIs 1, 2 and 5 pick up a
+`partial` chip, and KPI 2 reads 51,893 — which is the behaviour to check when a
+source is late.
 
 ## Four readings the page commits to
 
@@ -106,7 +112,38 @@ it took beside the number that depends on it — select any KPI tile.
   invited set rather than the whole target population, that rate is measuring
   something narrower than it appears to.
 
+## Filters, print and export
+
+Channel, location and learning path come from the two employee reports. The
+campaign exports arrive pre-aggregated and carry no such columns, so those tiles
+stay unfiltered and the page says so rather than appearing to filter. The date
+range applies to the campaign exports, which are the only dated ones.
+
+Every chart carries a **Numbers** toggle. A tooltip needs a pointer, so the
+figures behind each chart are also available as a table — reachable by keyboard,
+visible on touch, and easy to copy.
+
+**Print** produces a management pack: light palette regardless of the viewer's
+theme, controls stripped, cards kept whole across page breaks, and the active
+filters printed on the page. A sheet of filtered numbers that does not say it
+was filtered is the one way this document can mislead, so that line is not
+optional.
+
+**Download KPIs (CSV)** emits the ten tiles with their value, basis, status and
+the reading applied, carrying the period and filter state in its header rows.
+Saved to disk the page uses an ordinary Blob download; inside a published
+artifact that route is inert, so it uses the viewer's file-save capability and
+hides the button when that capability is unavailable.
+
 ## Samples
 
-`samples/` holds the four supplied exports, used by every test. The data in them
-is synthetic.
+`samples/` holds the four supplied exports plus one fixture, used by every test.
+The data in all of them is synthetic.
+
+`02_WhatsApp_Campaign_KPI_SAMPLE.xlsx` **was not supplied — it is a stand-in**
+written to imitate what the WhatsApp tool would export, so the two KPIs that
+depend on it could be exercised before the real file arrives. Its read rates run
+far above e-mail open rates, which is the behaviour that matters here. Replace it
+with the genuine export and nothing needs changing: detection is by header
+signature, and the real file will be claimed the same way. Its numbers are
+invented and must not be reported as results.
