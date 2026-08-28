@@ -160,5 +160,38 @@ function wire() {
   }
 }
 
+/* ------------------------------------------------------------ preload ----
+ * A page written by the on-prem importer carries its rows inline, so it opens
+ * already populated instead of waiting for someone to drag five files in.
+ *
+ * The payload is in the shape `toRecords()` already returns, and it goes
+ * through the very same `claim()` a dropped file goes through. That is the
+ * point: there is one ingestion path, not two, so the importer needs no
+ * knowledge of which file is which and cannot disagree with the page about it.
+ * Drag-and-drop still works on top — a populated page can take an extra file.
+ */
+function preload() {
+  const payload = window.__PRELOADED__;
+  if (!Array.isArray(payload) || !payload.length) return;
+
+  const results = [];
+  for (const sheet of payload) {
+    const records = sheet && sheet.records;
+    if (!Array.isArray(records) || !records.length) continue;
+    const src = claim(sheet.headers || [], records);
+    results.push(src
+      ? { file:sheet.file, src, n:records.length }
+      : { file:sheet.file, error:'no sheet matched a known report' });
+  }
+  if (!results.length) return;
+
+  note(results);
+  if (window.__IMPORTED_AT__) {
+    const line = el('p', 'log-ok', `Imported ${window.__IMPORTED_AT__}`);
+    $('#log').prepend(line);
+  }
+}
+
 wire();
+preload();
 render();

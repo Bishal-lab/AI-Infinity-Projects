@@ -1,0 +1,15 @@
+# Where the importer looks and what it writes. Paths are relative to this file;
+# absolute paths work too, so the inbox can live on a share:
+#
+#   inbox: //fileserver/reporting/campaign-exports/inbox
+#
+# Change a path here rather than editing the script.
+
+inbox: inbox          # drop the five exports here
+archive: archive      # imported files are moved here
+rejected: rejected    # files nothing could read, with a .txt saying why
+out: out              # the populated dashboard is written here
+
+# The page the data is embedded into. Regenerate it with ../build.sh after any
+# change to ../src.
+dashboard: ../dashboard.html

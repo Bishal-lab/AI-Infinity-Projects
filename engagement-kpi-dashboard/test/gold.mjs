@@ -4,7 +4,13 @@ import path from 'path';
 const ROOT = new URL('../', import.meta.url).pathname;
 
 const strip = s => s.replace(/^export\s+/gm, '');
-const code = ['01_xlsx.js','02_sources.js','03_kpis.js'].map(f => ROOT + 'src/' + f).map(f => strip(fs.readFileSync(f,'utf8'))).join('\n');
+// The same substitution build.sh makes: SOURCES lives in config/sources.json
+// so the page and the on-prem importer share one definition.
+const sources = JSON.parse(fs.readFileSync(ROOT + 'config/sources.json', 'utf8')).sources;
+const code = ['01_xlsx.js','02_sources.js','03_kpis.js']
+  .map(f => strip(fs.readFileSync(ROOT + 'src/' + f, 'utf8')))
+  .join('\n')
+  .replace('/*__SOURCES__*/[]', JSON.stringify(sources));
 const ctx = { console, Blob, Response, DecompressionStream, TextDecoder, Date, Math, Number, Set, Map, JSON, isFinite, parseFloat, String, Object, Array,
   document: { createElement: () => ({ }), querySelector: () => null } };
 vm.createContext(ctx);

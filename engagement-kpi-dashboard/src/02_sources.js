@@ -1,26 +1,14 @@
 /* ============================================================== sources ==
  * Recognised by column signature, never by filename. `02_WhatsApp` has not
  * been supplied yet — its slot is defined so the moment the file arrives the
- * two blocked KPIs light up with no code change. Header names are the ones
- * the email report already uses, since a sibling export usually matches.
+ * two blocked KPIs light up with no code change.
+ *
+ * The list itself lives in config/sources.json, because the on-prem importer
+ * needs the same signatures to decide what it can use. build.sh substitutes it
+ * for the marker below, so there is one definition rather than two that can
+ * disagree about what makes a file the LMS export.
  */
-const SOURCES = [
-  { id:'email', label:'Email Campaign KPI', file:'01_Email_Campaign_KPI.xlsx',
-    grain:'campaign', must:['Campaign','Delivered','Clicked','Opened'],
-    cols:'Campaign · Campaign_Date · Sent · Delivered · Bounced · Opened · Clicked' },
-  { id:'whatsapp', label:'WhatsApp Campaign KPI', file:'02_WhatsApp_Campaign_KPI.xlsx',
-    grain:'campaign', must:['Campaign','Delivered','Read'],
-    cols:'Campaign · Campaign_Date · Sent · Delivered · Read · Clicked', awaited:true },
-  { id:'webinar', label:'Webinar Attendance', file:'03_Webinar_Attendance_Employee_Wise.xlsx',
-    grain:'employee', must:['Employee_ID','Registered','Attended'],
-    cols:'Employee_ID · Channel · Location · Webinar · Registered · Attended · Duration_Min · Certificate' },
-  { id:'lms', label:'LMS Employee-wise', file:'04_LMS_Employee_Wise_Report.xlsx',
-    grain:'employee', must:['Employee_ID','Modules_Assigned','Modules_Completed'],
-    cols:'Employee_ID · Channel · Location · Learning_Path · Modules_Assigned · Modules_Completed · Assessment_Score_%' },
-  { id:'viva', label:'Viva Engage KPI', file:'05_Viva_Engage_Campaign_KPI.xlsx',
-    grain:'campaign', must:['Campaign','Community_Members','Active_Users'],
-    cols:'Campaign · Campaign_Date · Community_Members · Active_Users · Posts · Comments · Likes · Shares · Polls' },
-];
+const SOURCES = /*__SOURCES__*/[];
 
 /* The four decisions from the plan, made explicit here so the page can state
  * which reading it took beside every number that depends on one. */
