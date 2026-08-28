@@ -1,0 +1,14 @@
+# Exclude the CONTENTS, not the folders — an ignored directory is never
+# descended into, so `!inbox/.gitkeep` would not bring the folder back and a
+# fresh clone would have nowhere to drop files.
+#
+# Everything here is either company data or a page containing it. None of it
+# belongs in the repository.
+inbox/*
+archive/*
+rejected/*
+out/*
+!inbox/.gitkeep
+!archive/.gitkeep
+!rejected/.gitkeep
+!out/.gitkeep

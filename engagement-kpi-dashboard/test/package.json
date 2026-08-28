@@ -1,0 +1,12 @@
+{
+  "name": "engagement-kpi-dashboard-tests",
+  "private": true,
+  "type": "module",
+  "description": "Browser tests for the dashboard. Playwright is the only dependency; the dashboard itself has none.",
+  "scripts": {
+    "test": "node gold.mjs && node drive.mjs && node narrow.mjs && node labels.mjs && node print.mjs && node export.mjs && node imported.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

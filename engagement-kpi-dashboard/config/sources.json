@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "The five reports, and the columns that identify each one. This file is the",
+    "single definition: build.sh inlines it into the page, and the on-prem",
+    "importer reads it directly. Both therefore agree by construction about what",
+    "makes a file the LMS export — they cannot drift.",
+    "",
+    "`must` is the signature. A sheet carrying every one of those columns is that",
+    "report, whatever the file is called. Add an alias by widening `must`, never",
+    "by matching on a filename.",
+    "",
+    "Edit this file, then run ./build.sh."
+  ],
+  "sources": [
+    { "id": "email", "label": "Email Campaign KPI", "file": "01_Email_Campaign_KPI.xlsx",
+      "grain": "campaign", "must": ["Campaign", "Delivered", "Clicked", "Opened"],
+      "cols": "Campaign · Campaign_Date · Sent · Delivered · Bounced · Opened · Clicked" },
+    { "id": "whatsapp", "label": "WhatsApp Campaign KPI", "file": "02_WhatsApp_Campaign_KPI.xlsx",
+      "grain": "campaign", "must": ["Campaign", "Delivered", "Read"],
+      "cols": "Campaign · Campaign_Date · Sent · Delivered · Read · Clicked", "awaited": true },
+    { "id": "webinar", "label": "Webinar Attendance", "file": "03_Webinar_Attendance_Employee_Wise.xlsx",
+      "grain": "employee", "must": ["Employee_ID", "Registered", "Attended"],
+      "cols": "Employee_ID · Channel · Location · Webinar · Registered · Attended · Duration_Min · Certificate" },
+    { "id": "lms", "label": "LMS Employee-wise", "file": "04_LMS_Employee_Wise_Report.xlsx",
+      "grain": "employee", "must": ["Employee_ID", "Modules_Assigned", "Modules_Completed"],
+      "cols": "Employee_ID · Channel · Location · Learning_Path · Modules_Assigned · Modules_Completed · Assessment_Score_%" },
+    { "id": "viva", "label": "Viva Engage KPI", "file": "05_Viva_Engage_Campaign_KPI.xlsx",
+      "grain": "campaign", "must": ["Campaign", "Community_Members", "Active_Users"],
+      "cols": "Campaign · Campaign_Date · Community_Members · Active_Users · Posts · Comments · Likes · Shares · Polls" }
+  ]
+}

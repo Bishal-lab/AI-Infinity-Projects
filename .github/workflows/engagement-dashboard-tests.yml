@@ -1,0 +1,102 @@
+# Tests for the engagement KPI dashboard.
+#
+# Scoped to `engagement-kpi-dashboard/**` on purpose. The BFSI digest workflows
+# are scoped to their own folder the same way, so the two projects share a
+# repository and nothing else: a change to one never runs the other's tests, and
+# a red build here says something about the dashboard and nothing about the
+# industry brief.
+#
+# Everything here is offline. The dashboard makes no network calls by design —
+# `drive.mjs` fails the build if the page requests anything but its fonts — and
+# the importer reads local files only.
+
+name: Engagement dashboard tests
+
+on:
+  push:
+    paths:
+      - "engagement-kpi-dashboard/**"
+      - ".github/workflows/engagement-dashboard-tests.yml"
+  pull_request:
+    paths:
+      - "engagement-kpi-dashboard/**"
+      - ".github/workflows/engagement-dashboard-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: engagement-kpi-dashboard
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: engagement-kpi-dashboard/test/package.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # openpyxl for the on-prem importer; pyyaml so its config.yaml is read
+      # rather than silently falling back to the default folder layout.
+      - name: Install the importer's dependencies
+        run: pip install --disable-pip-version-check openpyxl pyyaml
+
+      - name: Install Playwright
+        working-directory: engagement-kpi-dashboard/test
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      # dashboard.html is generated from src/. Editing a part and forgetting to
+      # rebuild leaves the shipped page silently behind the source, which no
+      # other test would catch — every one of them drives the built file.
+      - name: The built page matches its sources
+        run: |
+          ./build.sh
+          git diff --exit-code -- dashboard.html \
+            || { echo "::error::dashboard.html is stale — run ./build.sh and commit it"; exit 1; }
+
+      - name: KPIs reconcile against the sample exports
+        working-directory: engagement-kpi-dashboard/test
+        run: node gold.mjs
+
+      # imported.mjs needs a page the importer actually produced, so generate
+      # one from the samples first. This also exercises the importer end to end.
+      - name: The importer builds a populated page
+        run: |
+          cp samples/*.xlsx importer/inbox/
+          python importer/import_exports.py
+
+      - name: Browser tests
+        working-directory: engagement-kpi-dashboard/test
+        run: |
+          node drive.mjs
+          node narrow.mjs
+          node labels.mjs
+          node print.mjs
+          node export.mjs
+          node imported.mjs
+
+      # The generated page carries employee records, so it must never become a
+      # build artifact. Nothing here uploads one; this asserts the working tree
+      # is clean of them too, in case a path ever changes.
+      - name: No imported data left in the tree
+        run: |
+          git status --porcelain importer/ > /tmp/dirty
+          if [ -s /tmp/dirty ]; then
+            echo "::error::the importer left tracked files behind:"
+            cat /tmp/dirty
+            exit 1
+          fi
