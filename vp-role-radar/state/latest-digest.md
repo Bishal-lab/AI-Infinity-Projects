@@ -1,4 +1,4 @@
-# VP Role Radar — Tuesday, 01 September 2026
+# VP Role Radar — Wednesday, 02 September 2026
 
 **New openings:** 0
 **Brief:** Vice President & equivalent key account management leadership in Life Insurance across India, the GCC and Asia
@@ -27,4 +27,4 @@ No openings — but most sources could not be read this morning, so treat this a
 
 ---
 
-35 postings read from 2/6 sources · 0 matched the profile · 0 new. Could not be read: AIA Group (HTTP 404), Prudential plc (HTTP 404), MetLife (HTTP 422), Zurich Insurance (HTTP 422). That is most of them — run check-sources.
+36 postings read from 2/6 sources · 0 matched the profile · 0 new. Could not be read: AIA Group (HTTP 404), Prudential plc (HTTP 404), MetLife (HTTP 422), Zurich Insurance (HTTP 422). That is most of them — run check-sources.
