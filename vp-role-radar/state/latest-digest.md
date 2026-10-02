@@ -1,9 +1,17 @@
-# VP Role Radar — Thursday, 01 October 2026
+# VP Role Radar — Friday, 02 October 2026
 
-**New openings:** 0
+**New openings:** 1
 **Brief:** Vice President & equivalent key account management leadership in Life Insurance across India, the GCC and Asia
 
-No openings — but most sources could not be read this morning, so treat this as a broken run rather than a quiet market. See the footer, and run check-sources.
+## Possible fit (1)
+
+### Head of Bancassurance Strategic Insights and Business Performance — Sun Life
+
+- **Fit:** 59/100 (Possible fit)
+- **Where:** Jakarta Selatan, Jakarta Raya
+- **Listed:** posted 02 Oct · Sun Life
+- **Why it fits:** VP & above (head of) · bancassurance · Asia — Jakarta Selatan, Jakarta Raya
+- **Apply:** https://sunlife.wd3.myworkdayjobs.com/en-US/Experienced-Jobs/job/Jakarta-Selatan-Jakarta-Raya/Head-of-Bancassurance-Strategic-Insights-and-Business-Performance_JR00128502
 
 ## Search these yourself
 
@@ -27,4 +35,4 @@ No openings — but most sources could not be read this morning, so treat this a
 
 ---
 
-36 postings read from 2/6 sources · 0 matched the profile · 0 new. Could not be read: AIA Group (HTTP 404), Prudential plc (HTTP 404), MetLife (HTTP 422), Zurich Insurance (HTTP 422). That is most of them — run check-sources.
+38 postings read from 2/6 sources · 1 matched the profile · 1 new. Could not be read: AIA Group (HTTP 404), Prudential plc (HTTP 404), MetLife (HTTP 422), Zurich Insurance (HTTP 422). That is most of them — run check-sources.
