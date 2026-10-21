@@ -1,4 +1,4 @@
-# VP Role Radar — Tuesday, 20 October 2026
+# VP Role Radar — Wednesday, 21 October 2026
 
 **New openings:** 0
 **Brief:** Vice President & equivalent key account management leadership in Life Insurance across India, the GCC and Asia
